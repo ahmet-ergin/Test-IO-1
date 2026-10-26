@@ -120,11 +120,13 @@ async def list_events(session_id: str, after: int = 0):
 
 @router.get("/sessions/{session_id}/screens")
 async def list_screens(session_id: str):
+    await ss.get_session(session_id)
     return await db.screens.find({"session_id": session_id}, {"_id": 0}).sort("capturedAt", 1).to_list(100000)
 
 
 @router.get("/sessions/{session_id}/steps")
 async def list_steps(session_id: str, include_removed: bool = False):
+    await ss.get_session(session_id)
     q = {"session_id": session_id} if include_removed else {"session_id": session_id, "removed": False}
     return await db.steps.find(q, {"_id": 0}).sort("order", 1).to_list(100000)
 
@@ -134,6 +136,8 @@ async def update_step(step_id: str, body: UpdateStepRequest):
     step = await db.steps.find_one({"id": step_id}, {"_id": 0})
     if not step:
         raise AppError("STEP_NOT_FOUND", "Step not found.", 404)
+    if step.get("removed"):
+        raise AppError("STEP_REMOVED", "Removed steps cannot be edited.", 409)
     patch = body.model_dump(exclude_none=True)
     idx = patch.get("selectedLocatorIndex")
     if idx is not None and not (0 <= idx < len(step.get("locators") or [])):
@@ -153,6 +157,7 @@ async def remove_step(step_id: str):
 
 @router.post("/sessions/{session_id}/steps/reorder")
 async def reorder_steps(session_id: str, body: ReorderStepsRequest):
+    await ss.get_session(session_id)
     current = await db.steps.find({"session_id": session_id, "removed": False}, {"_id": 0}).to_list(100000)
     if sorted(body.order) != sorted(s["id"] for s in current):
         raise AppError("INVALID_ORDER", "Order must contain exactly the session's active step IDs.", 422)

@@ -27,8 +27,11 @@ async def status():
     if active:
         active["duration_ms"] = ss.duration_ms(active)
     online = await db.devices.count_documents({"agent_id": agent["id"], "online": True}) if agent else 0
+    serial = settings.get("active_device_serial")
+    selected_online = bool(agent and serial and await db.devices.find_one(
+        {"agent_id": agent["id"], "serial": serial, "online": True, "state": "device"}))
     return {"agentConnected": bool(agent), "agent": _agent_out(agent), "onlineDevices": online,
-            "activeDeviceSerial": settings.get("active_device_serial"), "activeSession": active,
+            "activeDeviceSerial": serial if selected_online else None, "activeSession": active,
             "agentTokenConfigured": bool(settings.get("agent_token_hash")),
             "stats": {"sessions": await db.sessions.count_documents({}),
                       "savedSessions": await db.sessions.count_documents({"saved": True}),

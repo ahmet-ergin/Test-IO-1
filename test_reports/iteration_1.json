@@ -1,0 +1,43 @@
+{
+  "summary": "First full run of AMTS Phase 1. Backend: existing 29-test suite passed (isolated DB); new external-URL suite (16 tests) passed; live simulated-agent suite (2 tests: export schema validation, invalid transitions STARTING->PAUSED 409, double start 409 SESSION_ALREADY_ACTIVE, delete active 409, resume while RECORDING 409, COMPLETED pause/resume/stop 409, delete -> 404) passed. Frontend: no-agent state (amber header, banner, start disabled, 0 devices), Sessions DEMO creation + DEMO labels, Recorded Steps (inspect drawer 4 tabs with content, rename/description/verification/locator switch saved, remove w/ confirm, raw log keeps 6 events incl. masked PIN, reorder warning dialog only first time, export download), TR/EN toggle, dark/light toggle persisted, Settings (token shown once with agent.properties snippet, interval save + persistence, validation error <500, audit log entries), planned badge TR/EN. LIVE simulated recorder: header green, SIMULATED Pixel FAKE-0001 Companion Etkin, select, Start -> BAŞLATILIYOR -> KAYDEDİLİYOR, feed SCREEN_CHANGE/TAP(HYBRID Transfer)/INPUT_TEXT [MASKELİ · 4]/BACK, latest screenshot rendered (1080px, REDACTED), Pause freezes duration, Resume, Stop -> TAMAMLANDI, Save, Export, Clear (confirm) -> BOŞTA; disconnect -> BAŞARISIZ within ~1s with 'Android device disconnected during recording.'; pkill agent -> header amber in ~11s, start disabled. All flows working. Cleanup done: agent killed, all DEMO/SIMULATED sessions deleted (0 remain), token rotated, capture interval restored to 3000.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/sessions/{id}/steps/reorder", "issue": "Non-existent session_id with empty order returns 200 ok (sorted([])==sorted([])); should 404 via ss.get_session."},
+      {"endpoint": "GET /api/sessions/{id}/screens, /steps", "issue": "Do not verify session exists; return [] instead of 404."},
+      {"endpoint": "PATCH /api/steps/{id}", "issue": "Allows editing a removed step (removed:true) without error."},
+      {"endpoint": "settings.active_device_serial", "issue": "Stays set to FAKE-0001 after agent disconnects/device offline; never cleared (remains in DB now, SettingsUpdate likely cannot clear it)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AppShell header / Recorder 'Aktif Cihaz'", "issue": "After agent disconnect, header and Recorder KV still show 'Aktif Cihaz: FAKE-0001' although no agent/device is online - stale device shown as active (conflicts with 'never show devices as real when not connected').", "selector": "[data-testid=header-agent-status] sibling, recorder active device KV", "priority": "MEDIUM"},
+      {"component": "Recorder duration", "issue": "After Clear (IDLE) recorder-duration shows 00:00:01 instead of 00:00:00 (useTicker base not reset when session becomes null).", "selector": "[data-testid=recorder-duration]", "priority": "LOW"},
+      {"component": "RecordedSteps", "issue": "step-row/step-inspect/step-move testids use step.order; after removing step 1 rows are step-row-2..5 while displayed index is 1..4 (testids unstable). Opening /recorded-steps without id shows empty 'Oturum seçin' instead of auto-selecting latest session.", "selector": "[data-testid^=step-row-]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Settings", "issues": ["Audit log table headers 'Action' / 'Target' not translated in TR", "Validation toast shows raw English pydantic message 'Input should be greater than or equal to 500' in TR UI", "Agent properties snippet uses 'adb.path=adb' default - fine, but backend.url points to preview URL"]},
+      {"screen": "Light theme header", "issues": ["Amber 'agent not connected' pill text on pale amber background has lowish contrast"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_external_api.py", "/app/backend/tests/test_live_agent_external.py", "/app/backend/tests/test_api_integration.py", "/app/backend/tests/test_units.py", "/app/test_reports/pytest/external_api.xml"],
+  "action_items": [
+    "Clear or visually mark stale active_device_serial when agent not connected / device offline (header + Recorder)",
+    "Reset recorder duration ticker to 0 when session cleared",
+    "Reorder endpoint: validate session exists (404)",
+    "Translate audit table headers and map backend validation errors to i18n"
+  ],
+  "critical_code_review_comments": [
+    "session_routes._control transitions state before queuing the agent command; if queue_command fails the state is already changed (low risk).",
+    "reorder_steps does N sequential update_one calls; consider bulk_write.",
+    "export_session writes an audit entry on every export (also on every UI download) - fine but noisy.",
+    "pytest.ini forces '-n ... --dist loadscope' (xdist); use '-n 0' for the live-agent file."
+  ],
+  "updated_files": ["/app/backend/tests/test_external_api.py", "/app/backend/tests/test_live_agent_external.py"],
+  "success_rate": {"backend": "100% (47/47)", "frontend": "~95% (all flows pass; minor stale-state UI issues)"},
+  "seed_data_creation": "None left. DEMO and SIMULATED sessions created during testing were deleted; token rotated afterwards. settings.active_device_serial remains 'FAKE-0001' (cannot clear via API). Agent/device docs of SIMULATED-contract-test remain in agents/devices collections (offline).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run external suite: cd /app/backend && python -m pytest tests/test_external_api.py (requires no agent running). Live suite: start simulated agent per review request, then AMTS_AGENT_RUNNING=1 python -m pytest tests/test_live_agent_external.py -n 0. Recorder clear dialog confirm testid is 'recorder-clear-confirm' (not recorder-clear-dialog-confirm). Recorded steps testids use step.order. Radix tab panels: use [role=tabpanel][data-state=active]."
+}

@@ -20,7 +20,7 @@ const KEY = "amts.recorder.session";
 const useTicker = (session) => {
   const [now, setNow] = useState(Date.now());
   const [base, setBase] = useState({ ms: 0, at: Date.now() });
-  useEffect(() => { if (session) setBase({ ms: session.duration_ms, at: Date.now() }); }, [session]);
+  useEffect(() => { setBase({ ms: session?.duration_ms || 0, at: Date.now() }); }, [session]);
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), 500); return () => clearInterval(id); }, []);
   return session?.status === "RECORDING" ? base.ms + (now - base.at) : base.ms;
 };

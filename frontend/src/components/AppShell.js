@@ -59,7 +59,7 @@ const Header = () => {
       <div className="flex min-w-0 items-center gap-3">
         <span data-testid="header-agent-status"
           className={`inline-flex items-center gap-2 rounded border px-2 py-1 text-xs ${connected
-            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500" : "border-amber-500/30 bg-amber-500/10 text-amber-500"}`}>
+            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500" : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"}`}>
           <span className={`h-2 w-2 rounded-full ${connected ? "bg-emerald-500 rec-pulse-green" : "bg-amber-500"}`} />
           {connected ? `${t("agent_connected")} · ${status.agent?.name}` : t("agent_disconnected")}
         </span>

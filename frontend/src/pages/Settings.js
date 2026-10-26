@@ -56,7 +56,7 @@ export default function Settings() {
         redact_sensitive_regions: s.redact_sensitive_regions, retention_days: Number(s.retention_days),
         external_ai_consent: s.external_ai_consent, mask_keywords: keywords.split(",").map((k) => k.trim()).filter(Boolean) };
       await http.put("/settings", body); toast.success(t("s_saved")); load();
-    } catch (e) { toast.error(errMsg(e)); }
+    } catch (e) { toast.error(e?.response?.status === 422 ? t("err_validation") : errMsg(e)); }
   };
   const purge = async () => {
     try { const { data } = await http.post("/retention/purge"); toast.success(`${t("s_purged")}: ${data.deleted}`); load(); } catch (e) { toast.error(errMsg(e)); }
@@ -95,7 +95,7 @@ export default function Settings() {
         </Panel>
         <Panel title={t("s_audit")} testId="settings-audit-panel">
           <div className="max-h-72 overflow-y-auto">
-            <Table><TableHeader><TableRow><TableHead>{t("col_time")}</TableHead><TableHead>Action</TableHead><TableHead>Target</TableHead></TableRow></TableHeader>
+            <Table><TableHeader><TableRow><TableHead>{t("col_time")}</TableHead><TableHead>{t("col_audit_action")}</TableHead><TableHead>{t("col_audit_target")}</TableHead></TableRow></TableHeader>
               <TableBody>{audit.map((a) => (
                 <TableRow key={a.id}><TableCell className="text-xs">{fmtTime(a.timestamp)}</TableCell><TableCell className="font-mono text-xs">{a.action}</TableCell><TableCell className="truncate font-mono text-[11px] text-muted-foreground">{a.target?.slice(0, 12) || "—"}</TableCell></TableRow>
               ))}</TableBody></Table>

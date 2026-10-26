@@ -19,12 +19,12 @@ const StepRow = ({ step, event, screen, index, total, onInspect, onMove, t }) =>
   const loc = step.locators?.[step.selectedLocatorIndex];
   const thumb = artifactUrl(screen?.screenshotRef);
   return (
-    <div data-testid={`step-row-${step.order}`} className="feed-row grid grid-cols-[32px_56px_1fr_auto] items-center gap-3 border-b border-border px-3 py-2.5 hover:bg-muted/40 lg:grid-cols-[32px_56px_1.2fr_1fr_1.4fr_90px_90px_auto]">
+    <div data-testid={`step-row-${index + 1}`} className="feed-row grid grid-cols-[32px_56px_1fr_auto] items-center gap-3 border-b border-border px-3 py-2.5 hover:bg-muted/40 lg:grid-cols-[32px_56px_1.2fr_1fr_1.4fr_90px_90px_auto]">
       <span className="font-mono text-xs text-muted-foreground">{index + 1}</span>
       <div className="h-14 w-10 overflow-hidden rounded border border-border bg-muted/40">{thumb && <img src={thumb} alt="" className="h-full w-full object-cover object-top" />}</div>
       <div className="min-w-0">
         <div className="flex items-center gap-2"><Tag tone="blue">{step.action}</Tag>{step.verification && <Tag tone="green"><ShieldCheck className="mr-1 h-3 w-3" />{t("verification")}</Tag>}{event?.uncertain && <Tag tone="amber">{t("uncertain")}</Tag>}</div>
-        <div className="mt-1 truncate text-sm font-medium" data-testid={`step-name-${step.order}`}>{step.name}</div>
+        <div className="mt-1 truncate text-sm font-medium" data-testid={`step-name-${index + 1}`}>{step.name}</div>
         {step.description && <div className="truncate text-xs text-muted-foreground">{step.description}</div>}
       </div>
       <div className="hidden min-w-0 lg:block"><div className="truncate text-xs">{screen?.screenName || "—"}</div><div className="truncate text-[11px] text-muted-foreground">{elementLabel(event) || t("unavailable")}</div></div>
@@ -32,9 +32,9 @@ const StepRow = ({ step, event, screen, index, total, onInspect, onMove, t }) =>
       <div className="hidden lg:block"><Confidence value={event?.confidence} /></div>
       <div className="hidden lg:block"><Tag tone={event?.captureSource === "DEMO" ? "amber" : "muted"}>{event?.captureSource}</Tag><div className="mt-1 font-mono text-[10px] text-muted-foreground">{event && new Date(event.timestamp).toLocaleTimeString()}</div></div>
       <div className="flex items-center gap-0.5">
-        <Button size="icon" variant="ghost" className="h-7 w-7" disabled={index === 0} onClick={() => onMove(index, -1)} data-testid={`step-move-up-${step.order}`}><ArrowUp className="h-3.5 w-3.5" /></Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" disabled={index === total - 1} onClick={() => onMove(index, 1)} data-testid={`step-move-down-${step.order}`}><ArrowDown className="h-3.5 w-3.5" /></Button>
-        <Button size="sm" variant="outline" className="h-7" onClick={() => onInspect(step)} data-testid={`step-inspect-${step.order}`}>{t("btn_inspect")}</Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7" disabled={index === 0} onClick={() => onMove(index, -1)} data-testid={`step-move-up-${index + 1}`}><ArrowUp className="h-3.5 w-3.5" /></Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7" disabled={index === total - 1} onClick={() => onMove(index, 1)} data-testid={`step-move-down-${index + 1}`}><ArrowDown className="h-3.5 w-3.5" /></Button>
+        <Button size="sm" variant="outline" className="h-7" onClick={() => onInspect(step)} data-testid={`step-inspect-${index + 1}`}>{t("btn_inspect")}</Button>
       </div>
     </div>
   );
@@ -74,6 +74,7 @@ export default function RecordedSteps() {
     } catch (err) { toast.error(errMsg(err)); }
   }, [sessionId]);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (!sessionId && sessions.length) nav(`/recorded-steps/${sessions[0].id}`, { replace: true }); }, [sessionId, sessions, nav]);
 
   const evById = useMemo(() => Object.fromEntries(events.map((e) => [e.eventId, e])), [events]);
   const scById = useMemo(() => Object.fromEntries(screens.map((s) => [s.id, s])), [screens]);

@@ -58,7 +58,8 @@ const tr = {
   dash_active: "Aktif Kayıt", dash_sessions: "Oturum", dash_events: "Kaydedilen Olay", dash_recent: "Son Oturumlar",
   dash_modules: "Modül Durumu", implemented: "UYGULANDI", planned_short: "PLANLANDI", none: "Yok",
   planned_badge: "Planlandı — Henüz Uygulanmadı", planned_intro: "Bu modül Faz 1 kapsamında değildir. Aşağıda yalnızca mimari sözleşme özetlenmiştir; çalışan bir özellik yoktur.",
-  err_generic: "Beklenmeyen bir hata oluştu.",
+  err_generic: "Beklenmeyen bir hata oluştu.", err_validation: "Geçersiz değer: aralık 500–60000 ms, saklama 1–3650 gün.",
+  col_audit_action: "İşlem", col_audit_target: "Hedef",
 };
 
 const en = {
@@ -120,7 +121,8 @@ const en = {
   dash_active: "Active Recording", dash_sessions: "Sessions", dash_events: "Recorded Events", dash_recent: "Recent Sessions",
   dash_modules: "Module Status", implemented: "IMPLEMENTED", planned_short: "PLANNED", none: "None",
   planned_badge: "Planned — Not Implemented", planned_intro: "This module is out of Phase 1 scope. Only the architectural contract is summarised below; there is no working feature.",
-  err_generic: "An unexpected error occurred.",
+  err_generic: "An unexpected error occurred.", err_validation: "Invalid value: interval 500–60000 ms, retention 1–3650 days.",
+  col_audit_action: "Action", col_audit_target: "Target",
 };
 
 export const DICTS = { tr, en };
