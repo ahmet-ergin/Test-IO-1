@@ -4,7 +4,7 @@ export const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 export const http = axios.create({ baseURL: API });
 
 export const errMsg = (e, fallback = "Error") =>
-  e?.response?.data?.error?.message || e?.response?.data?.detail?.[0]?.msg || e?.message || fallback;
+  e?.response?.data?.error?.message || e?.response?.data?.detail?.[0]?.msg?.replace(/^Value error, /, "") || e?.message || fallback;
 
 export const artifactUrl = (id) => (id ? `${API}/artifacts/${id}` : null);
 

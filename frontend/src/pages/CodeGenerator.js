@@ -36,6 +36,8 @@ export default function CodeGenerator() {
   const [cfg, setCfg] = useState(null);
   const [plan, setPlan] = useState(null);
   const [planStale, setPlanStale] = useState(false);
+  const [planError, setPlanError] = useState(null);
+  const [genValidation, setGenValidation] = useState(null);
   const [files, setFiles] = useState([]);
   const [original, setOriginal] = useState([]);
   const [active, setActive] = useState(0);
@@ -56,29 +58,35 @@ export default function CodeGenerator() {
     });
   }, []);
 
-  const updateCfg = (c) => { setCfg(c); setPlanStale(true); localStorage.setItem(STORAGE, JSON.stringify(c)); };
+  const updateCfg = (c) => { setCfg(c); setPlanStale(true); if (files.length) setStale(true); localStorage.setItem(STORAGE, JSON.stringify(c)); };
+  const resetCfg = async () => {
+    localStorage.removeItem(STORAGE);
+    const { data } = await http.get("/codegen/defaults");
+    setCfg(data); setPlan(null); setPlanError(null);
+  };
 
   const review = useCallback(async () => {
     if (!sessionId || !cfg) return;
     setBusy("plan");
     try {
       const { data } = await http.post("/codegen/plan", { sessionId, config: cleanCfg(cfg) });
-      setPlan(data); setPlanStale(false); setTab("review");
-    } catch (e) { toast.error(errMsg(e)); } finally { setBusy(""); }
+      setPlan(data); setPlanStale(false); setPlanError(null); setTab("review");
+    } catch (e) { setPlanError(errMsg(e)); toast.error(errMsg(e)); } finally { setBusy(""); }
   }, [sessionId, cfg]);
 
-  useEffect(() => { if (sessionId && cfg && !plan) review(); }, [sessionId, cfg, plan, review]);
+  useEffect(() => { if (sessionId && cfg && !plan && !planError) review(); }, [sessionId, cfg, plan, planError, review]);
 
-  const pick = (id) => { setSessionId(id); setParams({ session: id }); setPlan(null); setFiles([]); setValidation(null); };
+  const pick = (id) => { setSessionId(id); setParams({ session: id }); setPlan(null); setPlanError(null); setFiles([]); setValidation(null); };
 
   const generate = async () => {
     setBusy("gen");
     try {
       const { data } = await http.post("/codegen/generate", { sessionId, config: cleanCfg(cfg) });
-      setPlan(data.plan); setPlanStale(false); setFiles(data.files); setOriginal(data.files); setValidation(data.validation);
+      setPlan(data.plan); setPlanStale(false); setPlanError(null); setFiles(data.files); setOriginal(data.files);
+      setValidation(data.validation); setGenValidation(data.validation);
       setStale(false); setActive(0); setTab("code");
       toast.success(`Kod üretildi — doğrulama: ${data.validation.status}`);
-    } catch (e) { toast.error(errMsg(e)); } finally { setBusy(""); }
+    } catch (e) { setPlanError(errMsg(e)); toast.error(errMsg(e)); } finally { setBusy(""); }
   };
 
   const validate = async () => {
@@ -101,7 +109,15 @@ export default function CodeGenerator() {
     } catch (e) { toast.error(errMsg(e)); } finally { setBusy(""); }
   };
 
-  const edit = (i, content) => { setFiles((fs) => fs.map((f, j) => (j === i ? { ...f, content } : f))); setStale(true); };
+  const edit = (i, content) => {
+    setFiles((fs) => {
+      const next = fs.map((f, j) => (j === i ? { ...f, content } : f));
+      const pristine = !planStale && next.every((f, j) => f.content === original[j]?.content);
+      if (pristine) setValidation(genValidation);
+      setStale(!pristine);
+      return next;
+    });
+  };
   const reset = (i) => edit(i, original[i].content);
 
   return (
@@ -115,7 +131,8 @@ export default function CodeGenerator() {
       </PageHeader>
       {!sessions.length ? <Panel><EmptyState text="Kod üretmek için tamamlanmış bir kayıt oturumu gerekli." testId="cg-no-sessions" /></Panel> : (
         <div className="grid gap-4 xl:grid-cols-[360px_1fr]">
-          <Panel title="Framework yapılandırması" testId="cg-config"><div className="px-4">{cfg && <ConfigPanel cfg={cfg} onChange={updateCfg} derived={plan?.config} />}</div></Panel>
+          <Panel title="Framework yapılandırması" testId="cg-config" right={<Button data-testid="cg-config-reset" size="sm" variant="ghost" className="h-6 text-[11px]" onClick={resetCfg}>Varsayılanlara dön</Button>}>
+            <div className="px-4">{cfg && <ConfigPanel cfg={cfg} onChange={updateCfg} derived={plan?.config} />}</div></Panel>
           <div className="min-w-0 space-y-4">
             {planStale && plan && <div data-testid="cg-plan-stale" className="rounded border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-500">
               Yapılandırma değişti — güncel adım metinleri için "Adımları incele" veya "Kodu üret"e tıklayın.</div>}
@@ -125,7 +142,11 @@ export default function CodeGenerator() {
                 <TabsTrigger value="code" data-testid="cg-tab-code" disabled={!files.length}><Code2 className="mr-1.5 h-4 w-4" />2 · Önizleme & düzenleme</TabsTrigger>
               </TabsList>
               <TabsContent value="review"><Panel testId="cg-review-panel"><div className="p-4">
-                {plan ? <PlanReview plan={plan} /> : <EmptyState text={busy === "plan" ? "İnceleniyor…" : "Bir oturum seçin."} testId="cg-plan-placeholder" />}
+                {plan ? <PlanReview plan={plan} /> : planError
+                  ? <div data-testid="cg-plan-error" className="rounded border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-500">
+                      Yapılandırma hatası: {planError}
+                      <Button data-testid="cg-plan-error-reset" size="sm" variant="outline" className="ml-3 h-6 text-[11px]" onClick={resetCfg}>Varsayılanlara dön</Button></div>
+                  : <EmptyState text={busy === "plan" ? "İnceleniyor…" : "Bir oturum seçin."} testId="cg-plan-placeholder" />}
               </div></Panel></TabsContent>
               <TabsContent value="code">
                 <div className="grid gap-4 2xl:grid-cols-[1fr_340px]">

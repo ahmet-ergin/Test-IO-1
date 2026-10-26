@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 const CHECK_NAMES = { gauge_match: "Gauge adım ↔ @Step eşleşmesi", step_collisions: "Mevcut step metni çakışması", javac: "Java derleme (javac)" };
 const ICON = {
   PASS: <CheckCircle2 className="h-4 w-4 text-emerald-500" />, FAIL: <XCircle className="h-4 w-4 text-red-500" />,
-  SKIPPED: <CircleDashed className="h-4 w-4 text-muted-foreground" />,
+  SKIPPED: <CircleDashed className="h-4 w-4 text-muted-foreground" />, PARTIAL: <CircleDashed className="h-4 w-4 text-amber-500" />,
 };
 const BANNER = {
   VERIFIED: ["border-emerald-500/30 bg-emerald-500/10 text-emerald-500", "DOĞRULANDI — sözdizimi derlendi ve Gauge adımları birebir eşleşiyor"],
   FAILED: ["border-red-500/30 bg-red-500/10 text-red-500", "BAŞARISIZ — aşağıdaki hataları düzeltin"],
-  NOT_VERIFIED: ["border-amber-500/30 bg-amber-500/10 text-amber-500", "DOĞRULANMADI — derleme doğrulaması yapılamadı"],
+  NOT_VERIFIED: ["border-amber-500/30 bg-amber-500/10 text-amber-500", "DOĞRULANMADI — seçilen Java sürümü için derleme doğrulaması yapılamadı"],
   STALE: ["border-amber-500/30 bg-amber-500/10 text-amber-500", "DEĞİŞTİRİLDİ — kod düzenlendi, doğrulanmadı"],
 };
 

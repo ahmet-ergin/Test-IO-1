@@ -114,6 +114,7 @@ def _stubs(cfg, defined: set) -> dict:
 
 
 _javac_version = None
+_javac_slots = asyncio.Semaphore(2)
 
 
 async def _run(*args, timeout=90):
@@ -139,6 +140,15 @@ async def check_javac(files, cfg):
     release = cfg.javaVersion if int(cfg.javaVersion) <= _javac_version else str(_javac_version)
     note = "" if release == cfg.javaVersion else f" (Java {cfg.javaVersion} seçildi; sunucudaki javac en fazla --release {release} destekliyor)"
     java_files = [f for f in files if f["path"].endswith(".java")]
+    path_errors = []
+    for f in java_files:
+        pkg = (_PKG.search(f["content"]) or [None, ""])[1]
+        cls = (_CLS.search(f["content"]) or [None, None])[1]
+        expected = "/".join([*pkg.split("."), f"{cls}.java"]) if pkg else f"{cls}.java"
+        if not cls or not f["path"].endswith("/" + expected) and f["path"] != expected:
+            path_errors.append(f"{f['path']}: package/sınıf adı ({pkg or '-'}.{cls or '?'}) dosya yoluyla eşleşmiyor; beklenen yol sonu '{expected}'.")
+    if path_errors:
+        return {"id": "javac", "status": "FAIL", "summary": "Dosya yolu ile package/sınıf adı uyumsuz; gerçek projede derlenmez.", "details": path_errors}
     defined = set()
     with tempfile.TemporaryDirectory(prefix="amts-codegen-") as tmp:
         root = Path(tmp)
@@ -147,7 +157,7 @@ async def check_javac(files, cfg):
             pkg = (_PKG.search(f["content"]) or [None, ""])[1]
             cls = (_CLS.search(f["content"]) or [None, Path(f["path"]).stem])[1]
             defined.add(f"{pkg}.{cls}" if pkg else cls)
-            p = root / "src" / pkg.replace(".", "/") / f"{cls}.java"
+            p = root / "src" / f["path"]
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text(f["content"], encoding="utf-8")
             srcs.append((p, f["path"]))
@@ -160,14 +170,16 @@ async def check_javac(files, cfg):
         if not all_src:
             return {"id": "javac", "status": "FAIL", "summary": "Derlenecek Java dosyası yok.", "details": []}
         cp = ":".join(str(j) for j in jars)
-        code, out = await _run(javac, "--release", release, "-encoding", "UTF-8", "-proc:none", "-nowarn",
-                               "-d", str(root / "out"), "-cp", cp, *all_src)
+        async with _javac_slots:
+            code, out = await _run(javac, "--release", release, "-encoding", "UTF-8", "-proc:none", "-nowarn",
+                                   "-d", str(root / "out"), "-cp", cp, *all_src)
         for p, orig in srcs:
             out = out.replace(str(p), orig)
         out = out.replace(str(root) + "/", "")
     stub_note = f" Framework sınıfları için derleme amaçlı stub kullanıldı: {', '.join(stubs)}." if stubs else ""
     lines = [ln for ln in out.splitlines() if ln.strip() and not ln.startswith("Note:")]
-    return {"id": "javac", "status": "PASS" if code == 0 else "FAIL",
+    status = ("PASS" if release == cfg.javaVersion else "PARTIAL") if code == 0 else "FAIL"
+    return {"id": "javac", "status": status,
             "summary": f"javac --release {release} ile {len(java_files)} dosya derlendi ({TOOLCHAIN}).{note}{stub_note}"
             if code == 0 else f"Derleme hatası (javac --release {release}).{stub_note}",
             "details": lines[:40] if code != 0 else [], "stubs": list(stubs)}
@@ -179,7 +191,7 @@ async def validate_files(files, cfg) -> dict:
     checks = [gauge, coll, javac]
     if any(c["status"] == "FAIL" for c in checks):
         status = "FAILED"
-    elif javac["status"] != "PASS":
+    elif javac["status"] != "PASS":  # SKIPPED or PARTIAL (compiled only for a lower --release)
         status = "NOT_VERIFIED"
     else:
         status = "VERIFIED"

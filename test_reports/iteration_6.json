@@ -1,0 +1,39 @@
+{
+  "summary": "Tested the Code Generator (Kod Üreteci) end to end without touching the device: a Playwright route guard aborted POST */replays, and no heartbeats or session mutations were made. BACKEND: the isolated suites test_codegen, test_replay, test_api_integration and test_units passed 43/43. The new read-only external suite test_codegen_external.py passed 15/15 against the public URL. It covers: sessions list with action counts; defaults; DENEME-3 generate VERIFIED with the expected 5 file paths, spec step '* DENEME-3 Adım 1 - TRANSFER öğesine dokun' matching the @Step, and no 'new AndroidDriver'/'activateApp'; the mixed session fa049f6e VERIFIED; DENEME-1 VERIFIED with the UNSUPPORTED steps marked, 'AMTS_PININPUT' in the spec and no [MASKED]; a broken '}' gives FAILED with a javac error; a renamed spec step gives gauge_match FAIL; '../x.java' gives 422; 'com.class.x' gives 422; inherited mode without baseClass gives 422; inherited + INLINE gives 'extends BaseSteps', inline AppiumBy, no helper/locator file and VERIFIED; an unknown session gives 404; the zip is application/zip with X-AMTS-Validation=VERIFIED and AMTS_VALIDATION.md inside; the export steps include action=TAP. Extra checks: existingStepTexts collision gives step_collisions FAIL; DENEME-2 is VERIFIED; Java 21 falls back to --release 17 with a note. FRONTEND: all requested flows pass. The sidebar link sits under FAZ 1 and is not locked. DENEME-3 is auto-selected; status-1 HAZIR and locator AppiumBy.id(...) are shown. DENEME-1 shows the unsupported alert and 2 DESTEKLENMİYOR rows. Generate switches to the code tab with 5 file tabs, VERIFIED and javac PASS. An edit sets the dirty dot and STALE; validating broken code gives FAILED with the javac 'reached end of file' detail; reset plus validate gives VERIFIED; a renamed spec gives gauge FAIL. The ZIP download (amts-deneme-3-gauge.zip) shows a toast with VERIFIED. The config flow (inherited driver/helper, BaseSteps, INLINE) shows the plan-stale notice, then produces 'extends BaseSteps' with no helper/locators and VERIFIED. Clearing baseClass shows an error toast. Regression: Recorded Steps replay button is enabled, JSON export downloads, and the Sessions page lists sessions. localStorage was cleared afterwards.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/codegen/validate", "issue": "Compile validation ignores the file path. check_javac rewrites each file to src/<package>/<publicClass>.java, so a user edit that renames the class or package without matching the file path (e.g. 'public class OtherName' in .../Deneme3Steps.java, or package com.other) still returns VERIFIED. In the user's real project javac would fail ('class OtherName is public, should be declared in a file named OtherName.java'). Reproduced via the API. Fix: compile files at their given paths, or add a check that the package/class matches the path and FAIL if not."},
+      {"endpoint": "POST /api/codegen/* (422)", "issue": "Config validation errors reach the UI with the Pydantic prefix 'Value error, ...'. Strip it in the error handler."},
+      {"endpoint": "javac check", "issue": "Java 21 selected produces VERIFIED compiled with --release 17. The note is in the summary, but the VERIFIED banner does not show the downgrade. Consider NOT_VERIFIED, or show the note in the banner."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "CodeGenerator config persistence", "issue": "An invalid config (e.g. inherited mode with baseClass empty) is saved to localStorage on every keystroke. After a reload the auto-plan fails with a 422 toast, and the review panel shows 'Bir oturum seçin.' even though a session is selected. There is no 'reset to defaults' action. Show the plan error inline, add a Varsayılanlara dön button, and/or only persist a valid config.", "selector": "[data-testid=cg-plan-placeholder]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "CodeGenerator code tab", "issues": ["After 'Üretilen hâline dön' the content equals what was generated, but the banner stays STALE until the user clicks Doğrula again. Acceptable, but the banner could restore the previous validation when contentHash matches.", "After a config change post-generate, the files and validation banner still reflect the old config while the plan-stale notice shows. Validate/ZIP then run with the new config's stubs against the old files and may FAIL unexpectedly. Consider marking the validation stale on a config change."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_codegen.py", "/app/backend/tests/test_codegen_external.py", "/app/test_reports/pytest/pytest_codegen_isolated.xml", "/app/test_reports/pytest/pytest_codegen_external.xml"],
+  "action_items": [
+    "Make javac validation respect file paths (class/package must match path) so edited files can't get VERIFIED when they would fail in a real project",
+    "Handle an invalid persisted config: show the plan error inline instead of 'Bir oturum seçin.', and add a reset-to-defaults button",
+    "Strip the 'Value error, ' prefix from 422 config messages",
+    "Optional: mark validation stale on config change; flag the Java 21 -> release 17 fallback in the banner"
+  ],
+  "critical_code_review_comments": [
+    "validate.check_javac: writes sources by the parsed package/class rather than the given path, so path/class mismatches are masked",
+    "CodeGenerator.updateCfg persists every intermediate (possibly invalid) config to localStorage",
+    "Each /validate and /zip spawns javac with no concurrency limit; consider a semaphore to avoid CPU exhaustion under parallel requests",
+    "The planner and renderer otherwise look solid: masked locators are dropped, secret values are replaced by keys, java_str avoids \\u escapes, and paths are whitelisted"
+  ],
+  "updated_files": ["/app/backend/tests/test_codegen_external.py"],
+  "success_rate": {"backend": "100% (43/43 isolated + 15/15 external)", "frontend": "100% of requested flows (1 medium UX issue)"},
+  "seed_data_creation": "None. Codegen endpoints are read-only; only audit entries (CODEGEN_GENERATED / CODEGEN_ZIP_EXPORTED) were written by the app itself.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Real agent and Xiaomi device are connected: never POST */replays, never click replay-confirm-start, never send heartbeats or rotate the token. test_codegen_external.py is read-only and safe (needs REACT_APP_BACKEND_URL). Session ids: DENEME-3 976206fa..., DENEME-2 7c60e676..., mixed fa049f6e..., DENEME-1 (INPUT_TEXT) 251832fb.... Clear localStorage 'amts.codegen.config.v1' after config UI tests (done this run)."
+}

@@ -146,3 +146,8 @@ def test_edited_files_validate_and_zip(client, token):
     assert "BAŞARISIZ" in zipfile.ZipFile(io.BytesIO(z2.content)).read("AMTS_VALIDATION.md").decode()
     lst = client.get("/api/codegen/sessions").json()
     assert any(s["id"] == sid and s["actions"].get("TAP") == 2 for s in lst)
+    moved = [dict(f, content=f["content"].replace("public class Deneme3Steps", "public class OtherName")) if f["role"] == "steps" else f for f in files]
+    v = client.post("/api/codegen/validate", json={"sessionId": sid, "files": moved}).json()
+    assert v["status"] == "FAILED" and "dosya yoluyla" in [c for c in v["checks"] if c["id"] == "javac"][0]["details"][0]
+    v21 = client.post("/api/codegen/generate", json={"sessionId": sid, "config": {"javaVersion": "21"}}).json()["validation"]
+    assert v21["status"] == "NOT_VERIFIED" and [c for c in v21["checks"] if c["id"] == "javac"][0]["status"] == "PARTIAL"
