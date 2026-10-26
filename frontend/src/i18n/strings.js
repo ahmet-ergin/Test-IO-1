@@ -69,6 +69,20 @@ const tr = {
   replay_started: "Başlangıç", replay_checking: "Uyumlu cihaz kontrol ediliyor…", replay_loading: "Yükleniyor…",
   replay_queued_note: "Komut sırada — yerel ajanın almasını bekliyor.", replay_history: "Oynatmalar",
   replay_none: "Bu oturum için henüz oynatma yok.",
+  status_SKIPPED: "ATLANDI", status_PENDING: "BEKLİYOR",
+  replay_err_AGENT_NOT_CONNECTED: "Yerel Kayıt Ajanı bağlı değil.",
+  replay_err_DEVICE_NOT_CONNECTED: "Kaydın yapıldığı cihaz ajana bağlı değil.",
+  replay_err_DEVICE_NOT_READY: "Cihaz hazır değil. USB hata ayıklamayı onaylayın.",
+  replay_err_RECORDING_ACTIVE: "Bu cihazda aktif bir kayıt var; oynatma engellendi.",
+  replay_err_REPLAY_ALREADY_RUNNING: "Bu cihazda başka bir oynatma sırada veya çalışıyor.",
+  replay_err_SESSION_NOT_SAVED: "Yalnızca kaydedilmiş oturumlar oynatılabilir.",
+  replay_err_SESSION_ACTIVE: "Oynatmadan önce kaydı durdurun.",
+  replay_err_UNSUPPORTED_ACTION: "Bu MVP yalnızca TAP adımlarını destekler; oturumda desteklenmeyen adımlar var.",
+  replay_err_APP_NOT_ALLOWED: "Oynatma bu MVP'de yalnızca AMTS Sample App ile sınırlıdır.",
+  replay_err_NO_STEPS: "Oturumda oynatılacak adım yok.",
+  replay_err_NO_REPLAYABLE_LOCATOR: "Bazı adımlarda RESOURCE_ID, UIAUTOMATOR veya XPATH konumlandırıcı yok.",
+  replay_err_ACTIVITY_UNKNOWN: "Uygulamanın başlangıç aktivitesi belirlenemedi.",
+  replay_err_DEMO_SESSION_NOT_REPLAYABLE: "DEMO oturumları oynatılamaz.",
 };
 
 const en = {
@@ -141,6 +155,7 @@ const en = {
   replay_started: "Started", replay_checking: "Checking for a compatible device…", replay_loading: "Loading…",
   replay_queued_note: "Command queued — waiting for the local agent to pick it up.", replay_history: "Replays",
   replay_none: "No replays for this session yet.",
+  status_SKIPPED: "SKIPPED", status_PENDING: "PENDING",
 };
 
 export const DICTS = { tr, en };

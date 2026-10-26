@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timedelta
+from pymongo.errors import DuplicateKeyError
 from core.db import db, NO_ID
 from core.errors import AppError, AGENT_NOT_CONNECTED
 from core.config import REPLAY_ALLOWED_PACKAGES, REPLAY_TIMEOUT_S
@@ -120,7 +121,10 @@ async def start_replay(session_id: str) -> dict:
                "appActivity": run["app_activity"],
                "steps": [{"stepId": s["stepId"], "order": s["order"], "action": s["action"], "locators": s["locators"]}
                          for s in run["steps"]]}
-    await db.replays.insert_one(dict(run))
+    try:
+        await db.replays.insert_one({**run, "active_lock": t["device"]["serial"]})
+    except DuplicateKeyError:
+        raise AppError("REPLAY_ALREADY_RUNNING", "Another replay is already queued or running on this device.", 409)
     cmd = await queue_command(t["agentId"], "START_REPLAY", session_id, payload)
     await db.replays.update_one({"id": run_id}, {"$set": {"command_id": cmd["id"]}})
     await audit("REPLAY_QUEUED", "replay", run_id, {"sessionId": session_id, "device": t["device"]["serial"]})
@@ -128,7 +132,7 @@ async def start_replay(session_id: str) -> dict:
 
 
 async def get_run(run_id: str) -> dict:
-    r = await db.replays.find_one({"id": run_id}, NO_ID)
+    r = await db.replays.find_one({"id": run_id}, {"_id": 0, "active_lock": 0})
     if not r:
         raise AppError("REPLAY_NOT_FOUND", "Replay run not found.", 404)
     return r
@@ -172,13 +176,14 @@ async def apply_agent_update(run_id: str, body) -> dict:
             upd["error"] = _err(body.error) or next((s["error"] for s in ordered if s["status"] == "FAILED"), None) \
                 or {"code": "REPLAY_FAILED", "message": "Agent reported failure."}
         await audit(f"REPLAY_{target.value}", "replay", run_id, {"sessionId": run["session_id"]})
-    await db.replays.update_one({"id": run_id}, {"$set": upd})
+    unset = {"active_lock": ""} if target in (R.PASSED, R.FAILED) else {}
+    await db.replays.update_one({"id": run_id}, {"$set": upd, **({"$unset": unset} if unset else {})})
     return await get_run(run_id)
 
 
 async def fail_run(run: dict, code: str, message: str):
     steps = [{**s, "status": "SKIPPED" if s["status"] == "PENDING" else s["status"]} for s in run["steps"]]
-    await db.replays.update_one({"id": run["id"], "status": run["status"]}, {"$set": {
+    await db.replays.update_one({"id": run["id"], "status": run["status"]}, {"$unset": {"active_lock": ""}, "$set": {
         "status": R.FAILED.value, "ended_at": ss.now_iso(), "steps": steps, "error": {"code": code, "message": message}}})
 
 

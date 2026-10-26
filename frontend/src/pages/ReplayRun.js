@@ -11,13 +11,13 @@ const STEP_ICON = {
   SKIPPED: <MinusCircle className="h-4 w-4 text-muted-foreground" />, PENDING: <CircleDashed className="h-4 w-4 text-muted-foreground" />,
 };
 
-const StepResult = ({ s, running }) => (
+const StepResult = ({ s, running, t }) => (
   <div data-testid={`replay-step-${s.order}`} className="grid grid-cols-[24px_32px_1fr] gap-3 border-b border-border px-3 py-3 last:border-0">
     <span className="pt-0.5">{running && s.status === "PENDING" ? <Loader2 className="h-4 w-4 animate-spin text-sky-500" /> : STEP_ICON[s.status]}</span>
     <span className="pt-0.5 font-mono text-xs text-muted-foreground">#{s.order}</span>
     <div className="min-w-0 space-y-1">
       <div className="flex flex-wrap items-center gap-2"><Tag tone="blue">{s.action}</Tag><span className="text-sm font-medium">{s.name}</span>
-        <Tag tone={s.status === "PASSED" ? "green" : s.status === "FAILED" ? "red" : "muted"} testId={`replay-step-status-${s.order}`}>{s.status}</Tag>
+        <Tag tone={s.status === "PASSED" ? "green" : s.status === "FAILED" ? "red" : "muted"} testId={`replay-step-status-${s.order}`}>{t(`status_${s.status}`)}</Tag>
         {s.durationMs != null && <span className="font-mono text-[11px] text-muted-foreground">{s.durationMs} ms</span>}</div>
       {s.locator && <div className="truncate font-mono text-[11px] text-muted-foreground" data-testid={`replay-step-locator-${s.order}`}>{s.locator.strategy} · {s.locator.value}</div>}
       {s.error && <div data-testid={`replay-step-error-${s.order}`} className="rounded border border-red-500/30 bg-red-500/5 px-2 py-1.5 font-mono text-xs text-red-500">{s.error.code}: {s.error.message}</div>}
@@ -67,7 +67,7 @@ export default function ReplayRun() {
           <KV label="Run ID" value={run.id.slice(0, 8)} testId="replay-run-id" />
         </div>
       </Panel>
-      <Panel title={t("replay_steps")} testId="replay-steps"><div className="-m-4">{run.steps.map((s) => <StepResult key={s.stepId} s={s} running={run.status === "RUNNING"} />)}</div></Panel>
+      <Panel title={t("replay_steps")} testId="replay-steps"><div className="-m-4">{run.steps.map((s) => <StepResult key={s.stepId} s={s} t={t} running={run.status === "RUNNING"} />)}</div></Panel>
     </div>
   );
 }

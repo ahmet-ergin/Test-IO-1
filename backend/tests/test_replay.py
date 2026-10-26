@@ -73,6 +73,26 @@ def test_replay_pass_flow(client, token):
     assert _upd(client, token, run["id"], status="FAILED").status_code == 409
     assert client.get(f"/api/replays/{run['id']}").json()["status"] == "PASSED"
     assert client.get(f"/api/sessions/{sid}/replays").json()[0]["id"] == run["id"]
+    assert "active_lock" not in client.get(f"/api/replays/{run['id']}").json()
+    nxt = client.post(f"/api/sessions/{sid}/replays").json()  # lock released after terminal state
+    assert nxt["status"] == "QUEUED"
+    _upd(client, token, nxt["id"], status="FAILED", error={"code": "X", "message": "cleanup"})
+    assert client.get(f"/api/sessions/{sid}/replays?limit=0").status_code == 422
+
+
+def test_concurrent_start_is_atomic(client, token):
+    import asyncio
+    from services.replay_service import start_replay
+    from core.errors import AppError
+    sid = _recorded(client, token)
+
+    async def both():
+        return await asyncio.gather(start_replay(sid), start_replay(sid), return_exceptions=True)
+    res = client.portal.call(both)
+    errs = [r for r in res if isinstance(r, AppError)]
+    assert len(errs) == 1 and errs[0].code == "REPLAY_ALREADY_RUNNING"
+    ok = [r for r in res if isinstance(r, dict)][0]
+    _upd(client, token, ok["id"], status="FAILED")
 
 
 def test_old_agent_rejecting_command_fails_run(client, token):

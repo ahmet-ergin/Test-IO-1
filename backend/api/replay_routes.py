@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from core.db import db
 from services import replay_service as rs
 from services import sessions_service as ss
@@ -18,7 +18,7 @@ async def start_replay(session_id: str):
 
 
 @router.get("/sessions/{session_id}/replays")
-async def list_replays(session_id: str, limit: int = 20):
+async def list_replays(session_id: str, limit: int = Query(20, ge=1, le=100)):
     await ss.get_session(session_id)
     runs = await db.replays.find({"session_id": session_id}, {"_id": 0}).sort("created_at", -1).to_list(limit)
     return [{k: v for k, v in r.items() if k != "_id"} for r in runs]

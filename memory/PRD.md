@@ -24,7 +24,16 @@ backend/ (FastAPI: api, core, models, services, schemas, tests) · frontend/ (Re
 - Docs: LOCAL_VALIDATION (Mac), REAL_DEVICE_ACCEPTANCE, ACCEPTANCE_RESULTS (NOT RUN), CAPABILITIES, TEST_REPORT
 - Real-device acceptance still NOT RUN
 
+## Iteration 3 (2026-10-26) — Replay MVP (TAP via Appium 2)
+- User choices: refuse non-TAP sessions before starting; stop at first failure (rest SKIPPED); noReset; Appium URL from agent config (default 127.0.0.1:4723)
+- Backend: `replays` collection + `replay_service.py`; START_REPLAY via the existing command queue; endpoints replay-target / POST+GET replays / GET replay / agent status; atomic per-device lock (unique sparse `active_lock`); replay and recording exclude each other; run fails on agent command failure, agent disconnect or 180 s timeout; allowlist com.amts.sampleapp
+- Agent: `replay/AppiumClient.java` (java.net.http W3C) + `replay/ReplayRunner.java` (RESOURCE_ID→UIAUTOMATOR→XPATH, ambiguous = fail, session delete in finally); new config keys appium.url, replay.find.timeout.ms, appium.session.timeout.ms, replay.allowed.packages
+- UI: Replay button (Recorded Steps header + Sessions rows) with confirm dialog, /replays/:runId progress page, Replays history tab; TR/EN
+- Tests: backend 36 isolated + 7 read-only external; Java 28 (7 new ReplayRunner tests with a fake Appium HTTP server); iteration_5 passed
+- Physical-device replay via the AMTS UI: NOT YET VERIFIED (user to run docs/setup/REPLAY_MVP.md)
+
 ## Not yet done / backlog
 - P0: Real-device acceptance test on user's Mac (docs/setup/LOCAL_VALIDATION.md); build companion APK
+- P0: User runs physical-device replay acceptance (REPLAY_MVP.md)
 - P1: Phase 2 Locator Engine (on-device validation, scoring) — only after approval
 - P2: Phase 3 AI, Phase 4 Code generator, Phase 5 Jira/Zephyr, iOS; TypeScript migration; Postgres adapter if required

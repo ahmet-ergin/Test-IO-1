@@ -1,0 +1,36 @@
+{
+  "summary": "Tested the Replay MVP without touching the physical device. A Playwright route guard aborted any POST to */replays, and replay-confirm-start was never clicked. BACKEND: the isolated-DB suites test_replay.py, test_api_integration.py and test_units.py passed 35/35. The new read-only external suite test_replay_external.py passed 7/7: replay-target for the real session returns compatible=true with Xiaomi M2101K7BG / ZDEY45NRORWCF6N7, com.amts.sampleapp, com.amts.sampleapp.HomeActivity and stepCount 1, with no private '_' keys leaked; an unknown session returns 404; GET /api/replays/does-not-exist returns 404 REPLAY_NOT_FOUND; the session replays list is a list; agent replay status returns 401 with no token or a bad token; command result returns 401 with no token. FRONTEND: steps-replay-button ('Tekrar Oynat') is enabled for the real session. The confirm dialog shows device 'Xiaomi M2101K7BG', serial ZDEY45NRORWCF6N7, package com.amts.sampleapp, activity '.HomeActivity' and steps '1 × TAP'. Cancel closes it. The Oynatmalar tab shows replay-history-empty. For the Mongo-seeded saved session on an offline device, the button is disabled and steps-replay-button-disabled-reason shows the DEVICE_NOT_CONNECTED message; its history row lists the run and navigates to /replays/{id}. A seeded DEMO session has no replay button on either Recorded Steps or Sessions. On Sessions, session-replay-{id} is enabled for the real session, disabled for the offline one and absent for the demo one; the compact dialog opens and cancels. The ReplayRun page for the PASSED synthetic run shows status BAŞARILI, 1/1, step PASSED, locator 'RESOURCE_ID · com.amts.sampleapp:id/transferButton', no error. For the FAILED run it shows BAŞARISIZ, 2/2, step 1 FAILED with an AMBIGUOUS_LOCATOR step error and a run-level replay-error, and step 2 SKIPPED. The back link works, and an unknown run id shows replay-run-error. All synthetic docs (ui-test-* sessions, steps, events, replays) were deleted afterwards. The DB again holds only the real session and 0 replays. No heartbeats were sent, the token was not rotated and the real session was not modified.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/sessions/{id}/replays", "issue": "start_replay has a check-then-insert race: two concurrent POSTs can both pass active_replay_for_device and queue two START_REPLAY commands for the same device. Use a unique partial index or an atomic upsert/lock per device.serial for active statuses."},
+      {"endpoint": "GET /api/sessions/{id}/replays", "issue": "The limit query param has no bounds (e.g. limit=0 or a negative or huge value). Add Query(20, ge=1, le=100)."},
+      {"endpoint": "GET /api/sessions/{id}/replay-target", "issue": "Error messages are English-only and the frontend shows them verbatim in the Turkish UI (steps-replay-button-disabled-reason). Map error.code to i18n keys."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "ReplayRun", "issues": ["Step status tags (PASSED/FAILED/SKIPPED) are raw English, while the run StatusBadge is localized (BAŞARILI/BAŞARISIZ). This is inconsistent in TR mode."]},
+      {"screen": "Sessions", "issues": ["Each compact ReplayButton polls /replay-target every 5 s independently, so there are N requests per 5 s for N saved sessions. Consider one batched endpoint or polling only while the page is visible."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_replay.py", "/app/backend/tests/test_replay_external.py", "/app/test_reports/pytest/pytest_replay.xml", "/app/test_reports/pytest/pytest_replay_external.xml"],
+  "action_items": [
+    "Optional: make replay start atomic per device to prevent double-queue races",
+    "Optional: bound the limit param on the list replays endpoint",
+    "Optional: localize the replay-target error messages and step status tags in TR"
+  ],
+  "critical_code_review_comments": [
+    "replay_service.start_replay: non-atomic active-run check (race)",
+    "ReplayControls.useReplayTarget polls every 5 s per button instance; Sessions page multiplies requests",
+    "ReplayRun back link goes to /recorded-steps/{session_id} even if the session was deleted, which leads to a 404 toast. Minor."
+  ],
+  "updated_files": ["/app/backend/tests/test_replay_external.py"],
+  "success_rate": {"backend": "100% (42/42)", "frontend": "100%"},
+  "seed_data_creation": "Temporary Mongo docs with ids prefixed ui-test-* (2 sessions, 1 step, 1 event, 3 replays) were inserted via /tmp/seed.py and deleted afterwards (verified: replays=0, sessions=[real one only]).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Real agent and Xiaomi device are connected. Never POST /api/sessions/9520beae.../replays, never click replay-confirm-start, never send heartbeats, never rotate the token. The read-only external suite is test_replay_external.py (needs REACT_APP_BACKEND_URL env). For UI checks, seed ui-test-* docs directly in Mongo and clean them up afterwards. The real end-to-end replay on the device was NOT exercised; only the isolated pytest flows cover the mutation path."
+}

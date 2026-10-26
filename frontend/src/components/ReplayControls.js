@@ -14,7 +14,7 @@ import { KV } from "@/components/common";
 export const useReplayTarget = (sessionId) => {
   const [target, setTarget] = useState(null);
   const load = useCallback(() => {
-    if (!sessionId) return;
+    if (!sessionId || document.hidden) return;
     http.get(`/sessions/${sessionId}/replay-target`).then((r) => setTarget(r.data)).catch(() => setTarget(null));
   }, [sessionId]);
   useEffect(() => { load(); const id = setInterval(load, 5000); return () => clearInterval(id); }, [load]);
@@ -56,7 +56,8 @@ export const ReplayButton = ({ sessionId, compact = false, testId = "replay-butt
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const ok = !!target?.compatible;
-  const reason = target?.error?.message || t("replay_checking");
+  const errKey = `replay_err_${target?.error?.code}`;
+  const reason = target?.error ? (t(errKey) !== errKey ? t(errKey) : target.error.message) : t("replay_checking");
   const start = async () => {
     setBusy(true);
     try {
