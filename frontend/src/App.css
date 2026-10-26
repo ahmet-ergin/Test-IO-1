@@ -1,0 +1,27 @@
+.font-heading { font-family: "Plus Jakarta Sans", sans-serif; }
+
+.code-block {
+  background: hsl(var(--code-bg));
+  color: #e5e7eb;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-family: "JetBrains Mono", monospace;
+}
+
+@keyframes recPulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.8); } }
+.rec-pulse { animation: recPulse 1.2s ease-in-out infinite; }
+.rec-pulse-green { animation: recPulse 2.4s ease-in-out infinite; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.fade-up { animation: fadeUp .35s ease-out both; }
+.stagger > * { animation: fadeUp .35s ease-out both; }
+.stagger > *:nth-child(2) { animation-delay: .05s; }
+.stagger > *:nth-child(3) { animation-delay: .1s; }
+.stagger > *:nth-child(4) { animation-delay: .15s; }
+
+.feed-row { animation: fadeUp .25s ease-out both; }
+.grid-bg {
+  background-image: linear-gradient(hsl(var(--border)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px);
+  background-size: 24px 24px;
+}

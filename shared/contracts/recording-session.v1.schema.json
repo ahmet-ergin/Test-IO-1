@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-mobile-test-studio/schemas/recording-session.v1.schema.json",
+  "title": "AI Mobile Test Studio Recording Session",
+  "description": "Versioned recording export. schemaVersion 1.x is backward compatible; breaking changes bump the major version.",
+  "type": "object",
+  "required": ["schemaVersion", "sessionId", "platform", "status", "demo", "application", "device", "events", "steps", "screens", "limitations"],
+  "properties": {
+    "schemaVersion": {"type": "string", "pattern": "^1\\.[0-9]+$"},
+    "sessionId": {"type": "string", "minLength": 1},
+    "name": {"type": ["string", "null"]},
+    "platform": {"enum": ["ANDROID", "IOS"]},
+    "status": {"enum": ["IDLE", "STARTING", "RECORDING", "PAUSED", "STOPPING", "COMPLETED", "FAILED"]},
+    "demo": {"type": "boolean", "description": "true = synthetic data, never from a real device"},
+    "createdAt": {"type": ["string", "null"], "format": "date-time"},
+    "startedAt": {"type": ["string", "null"], "format": "date-time"},
+    "endedAt": {"type": ["string", "null"], "format": "date-time"},
+    "durationMs": {"type": "integer", "minimum": 0},
+    "error": {"type": ["object", "null"]},
+    "application": {
+      "type": "object",
+      "required": ["packageName"],
+      "properties": {"packageName": {"type": ["string", "null"]}}
+    },
+    "device": {
+      "type": "object",
+      "required": ["serial", "model", "androidVersion"],
+      "properties": {
+        "serial": {"type": ["string", "null"]},
+        "model": {"type": ["string", "null"]},
+        "manufacturer": {"type": ["string", "null"]},
+        "androidVersion": {"type": ["string", "null"]},
+        "sdkInt": {"type": ["integer", "null"]}
+      }
+    },
+    "captureMode": {"type": ["object", "null"]},
+    "limitations": {"type": "array", "items": {"type": "string"}},
+    "screens": {"type": "array", "items": {"$ref": "#/$defs/screen"}},
+    "events": {"type": "array", "items": {"$ref": "#/$defs/event"}},
+    "steps": {"type": "array", "items": {"$ref": "#/$defs/step"}}
+  },
+  "$defs": {
+    "nullableString": {"type": ["string", "null"]},
+    "bounds": {"type": ["array", "null"], "items": {"type": "integer"}, "minItems": 4, "maxItems": 4,
+      "description": "[left, top, right, bottom] in device pixels"},
+    "point": {"type": ["object", "null"], "required": ["x", "y"],
+      "properties": {"x": {"type": "integer"}, "y": {"type": "integer"}}},
+    "element": {
+      "type": ["object", "null"],
+      "properties": {
+        "resourceId": {"$ref": "#/$defs/nullableString"},
+        "accessibilityId": {"$ref": "#/$defs/nullableString"},
+        "text": {"$ref": "#/$defs/nullableString"},
+        "contentDesc": {"$ref": "#/$defs/nullableString"},
+        "hint": {"$ref": "#/$defs/nullableString"},
+        "className": {"$ref": "#/$defs/nullableString"},
+        "bounds": {"$ref": "#/$defs/bounds"},
+        "clickable": {"type": ["boolean", "null"]},
+        "enabled": {"type": ["boolean", "null"]},
+        "password": {"type": ["boolean", "null"]},
+        "resolvedFrom": {"enum": ["ACCESSIBILITY_NODE", "HIERARCHY_SNAPSHOT", "DEMO", null]}
+      }
+    },
+    "event": {
+      "type": "object",
+      "required": ["eventId", "sessionId", "sequence", "timestamp", "action", "captureSource", "confidence"],
+      "properties": {
+        "eventId": {"type": "string", "minLength": 1},
+        "sessionId": {"type": "string", "minLength": 1},
+        "sequence": {"type": "integer", "minimum": 1},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "action": {"enum": ["TAP", "LONG_PRESS", "INPUT_TEXT", "SWIPE", "SCROLL", "BACK", "SCREEN_CHANGE", "KEYBOARD_ACTION", "WAIT", "ASSERTION"]},
+        "deviceId": {"$ref": "#/$defs/nullableString"},
+        "packageName": {"$ref": "#/$defs/nullableString"},
+        "activity": {"$ref": "#/$defs/nullableString"},
+        "screenId": {"$ref": "#/$defs/nullableString"},
+        "hierarchyRef": {"$ref": "#/$defs/nullableString"},
+        "screenshotRef": {"$ref": "#/$defs/nullableString"},
+        "element": {"$ref": "#/$defs/element"},
+        "coordinates": {"$ref": "#/$defs/point"},
+        "endCoordinates": {"$ref": "#/$defs/point"},
+        "durationMs": {"type": ["integer", "null"]},
+        "keyCode": {"$ref": "#/$defs/nullableString"},
+        "inputValue": {
+          "type": ["object", "null"],
+          "required": ["masked"],
+          "properties": {
+            "masked": {"type": "boolean"},
+            "value": {"$ref": "#/$defs/nullableString"},
+            "length": {"type": ["integer", "null"]},
+            "reason": {"$ref": "#/$defs/nullableString"}
+          }
+        },
+        "captureSource": {"enum": ["ACCESSIBILITY", "ADB_GETEVENT", "ADB_UIAUTOMATOR", "HYBRID", "USER", "DEMO"]},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "uncertain": {"type": "boolean"},
+        "limitations": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "screen": {
+      "type": "object",
+      "required": ["screenId", "capturedAt"],
+      "properties": {
+        "screenId": {"type": "string"},
+        "screenName": {"$ref": "#/$defs/nullableString"},
+        "packageName": {"$ref": "#/$defs/nullableString"},
+        "activity": {"$ref": "#/$defs/nullableString"},
+        "width": {"type": ["integer", "null"]},
+        "height": {"type": ["integer", "null"]},
+        "orientation": {"type": ["integer", "null"], "description": "0,1,2,3 = 0/90/180/270 degrees"},
+        "capturedAt": {"type": "string", "format": "date-time"},
+        "hierarchyHash": {"$ref": "#/$defs/nullableString"},
+        "hierarchyRef": {"$ref": "#/$defs/nullableString"},
+        "screenshotRef": {"$ref": "#/$defs/nullableString"},
+        "screenshotStatus": {"enum": ["CAPTURED", "REDACTED", "BLOCKED_SECURE", "DISABLED", "FAILED", "SKIPPED_UNCHANGED"]},
+        "limitations": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "locatorCandidate": {
+      "type": "object",
+      "required": ["strategy", "value", "confidence"],
+      "properties": {
+        "strategy": {"enum": ["ACCESSIBILITY_ID", "RESOURCE_ID", "STABLE_ATTRIBUTES", "UIAUTOMATOR", "XPATH", "COORDINATES"]},
+        "value": {"type": "string"},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "uniqueness": {"type": "object"},
+        "validatedAt": {"$ref": "#/$defs/nullableString"},
+        "validationSource": {"$ref": "#/$defs/nullableString"}
+      }
+    },
+    "step": {
+      "type": "object",
+      "required": ["stepId", "order", "eventId", "name", "verification"],
+      "properties": {
+        "stepId": {"type": "string"},
+        "order": {"type": "integer"},
+        "eventId": {"type": "string"},
+        "name": {"type": "string"},
+        "description": {"type": "string"},
+        "verification": {"type": "boolean"},
+        "edited": {"type": "boolean"},
+        "selectedLocator": {"oneOf": [{"$ref": "#/$defs/locatorCandidate"}, {"type": "null"}]},
+        "alternativeLocators": {"type": "array", "items": {"$ref": "#/$defs/locatorCandidate"}}
+      }
+    }
+  }
+}

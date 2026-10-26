@@ -1,0 +1,7 @@
+# Copy to agent.properties (git-ignored). Environment variables AMTS_* override these values.
+backend.url=https://your-backend-host
+agent.token=paste-token-from-Settings-Agent-Pairing
+adb.path=adb
+heartbeat.ms=1000
+# agent.name=my-macbook
+# companion.package=com.amts.companion

@@ -1,0 +1,308 @@
+{
+  "project_name": "AI Mobile Test Studio — Enterprise Android Recorder MVP",
+  "archetype": "THE PERFORMANCE PRO / IDE & DEVTOOLS (Swiss Precision Meets Appium Inspector)",
+  "design_principles": [
+    "Information Density with Zero Clutter: Emulate JetBrains, Appium Inspector, and Postman density with 1px precise borders and clear panel splitters.",
+    "State Machine Clarity: Always clearly expose live recorder states (IDLE, STARTING, RECORDING, PAUSED, STOPPING, COMPLETED, FAILED) with dynamic status badges and pulse indicators.",
+    "Developer Accessibility: High-contrast code panels with monospace alignment for xpaths, package names, ADB serial numbers, and device metrics.",
+    "Bilingual First: Every piece of UI text must support Turkish (Default) and English seamlessly.",
+    "Context Preservation: Use slide-over inspector drawers and tabs rather than full page transitions when viewing step details, XML hierarchy, or JSON payloads."
+  ],
+  "theme_configuration": {
+    "default_theme": "dark",
+    "supported_themes": ["dark", "light"],
+    "default_language": "tr",
+    "supported_languages": ["tr", "en"],
+    "colors": {
+      "dark": {
+        "background": "#0B0F17",
+        "surface": "#111827",
+        "surface_subtle": "#1F2937",
+        "border": "#1F2937",
+        "border_subtle": "#374151",
+        "text_primary": "#F9FAFB",
+        "text_secondary": "#9CA3AF",
+        "text_muted": "#6B7280",
+        "accent_primary": "#3B82F6",
+        "accent_primary_hover": "#2563EB",
+        "accent_success": "#10B981",
+        "accent_warning": "#F59E0B",
+        "accent_danger": "#EF4444",
+        "recording_live_pulse": "#DC2626",
+        "code_bg": "#0D1117"
+      },
+      "light": {
+        "background": "#F8FAFC",
+        "surface": "#FFFFFF",
+        "surface_subtle": "#F1F5F9",
+        "border": "#E2E8F0",
+        "border_subtle": "#CBD5E1",
+        "text_primary": "#0F172A",
+        "text_secondary": "#475569",
+        "text_muted": "#94A3B8",
+        "accent_primary": "#2563EB",
+        "accent_primary_hover": "#1D4ED8",
+        "accent_success": "#059669",
+        "accent_warning": "#D97706",
+        "accent_danger": "#DC2626",
+        "recording_live_pulse": "#EF4444",
+        "code_bg": "#1E293B"
+      }
+    }
+  },
+  "typography": {
+    "headings": {
+      "font_family": "Plus Jakarta Sans, sans-serif",
+      "h1": "text-2xl sm:text-3xl font-bold tracking-tight",
+      "h2": "text-xl sm:text-2xl font-semibold tracking-tight",
+      "h3": "text-lg sm:text-xl font-medium",
+      "h4": "text-base font-medium"
+    },
+    "body": {
+      "font_family": "Manrope, sans-serif",
+      "size": "text-sm sm:text-base",
+      "subtext": "text-xs text-muted-foreground"
+    },
+    "code_and_data": {
+      "font_family": "JetBrains Mono, Fira Code, monospace",
+      "size": "text-xs sm:text-sm font-mono tracking-wide"
+    }
+  },
+  "layout_and_navigation": {
+    "app_shell": "Sidebar navigation + Top Header with Device/Agent status summary + Main resizable/pane workspace",
+    "sidebar_width": "w-64 flex-shrink-0 border-r border-border bg-card",
+    "top_header_height": "h-14 border-b border-border bg-card px-4 flex items-center justify-between",
+    "navigation_items": [
+      {
+        "id": "dashboard",
+        "label": { "tr": "Kontrol Paneli", "en": "Dashboard" },
+        "path": "/",
+        "icon": "LayoutDashboard",
+        "status": "implemented"
+      },
+      {
+        "id": "devices",
+        "label": { "tr": "Cihaz Yönetimi", "en": "Device Manager" },
+        "path": "/devices",
+        "icon": "Smartphone",
+        "status": "implemented"
+      },
+      {
+        "id": "recorder",
+        "label": { "tr": "Test Kaydedici", "en": "Test Recorder" },
+        "path": "/recorder",
+        "icon": "Video",
+        "status": "implemented"
+      },
+      {
+        "id": "sessions",
+        "label": { "tr": "Oturum Geçmişi", "en": "Session History" },
+        "path": "/sessions",
+        "icon": "History",
+        "status": "implemented"
+      },
+      {
+        "id": "recorded_steps",
+        "label": { "tr": "Kaydedilen Adımlar", "en": "Recorded Steps" },
+        "path": "/recorded-steps",
+        "icon": "ListChecks",
+        "status": "implemented"
+      },
+      {
+        "id": "settings",
+        "label": { "tr": "Ayarlar", "en": "Settings" },
+        "path": "/settings",
+        "icon": "Sliders",
+        "status": "implemented"
+      },
+      {
+        "id": "locator_inspector",
+        "label": { "tr": "Konumlandırıcı İnceleyici", "en": "Locator Inspector" },
+        "path": "/locator-inspector",
+        "icon": "Crosshair",
+        "status": "planned"
+      },
+      {
+        "id": "ai_analysis",
+        "label": { "tr": "Yapay Zeka Analizi", "en": "AI Analysis" },
+        "path": "/ai-analysis",
+        "icon": "Sparkles",
+        "status": "planned"
+      },
+      {
+        "id": "code_generator",
+        "label": { "tr": "Kod Üreteci", "en": "Code Generator" },
+        "path": "/code-generator",
+        "icon": "Code2",
+        "status": "planned"
+      },
+      {
+        "id": "jira_integration",
+        "label": { "tr": "Jira Entegrasyonu", "en": "Jira Integration" },
+        "path": "/jira-integration",
+        "icon": "Share2",
+        "status": "planned"
+      }
+    ]
+  },
+  "page_specifications": {
+    "dashboard": {
+      "key_components": [
+        "Agent & ADB Device Status Overview Cards",
+        "Quick Action Panel (Start Recording, Select Device, View Last Session)",
+        "Recent Recording Sessions Table (Device, Duration, Step Count, Status, Actions)",
+        "Recorded Step Metrics Chart (Action distribution: Click, Swipe, Type, Assert)",
+        "System Health & Latency Monitor Widget"
+      ]
+    },
+    "devices": {
+      "key_components": [
+        "Local Recorder Agent Connection Status Bar (Connected / Disconnected Banner)",
+        "ADB Devices Table (Model, OS Version, Serial Number, Battery %, Connection Type USB/Wifi, Status ONLINE/OFFLINE/RECORDING, Select Active Device CTA)",
+        "Refresh Devices Button with Spinner",
+        "Agent Pairing Token & Port Configuration Quick Modal",
+        "Empty State component when Local Recorder Agent is not running"
+      ]
+    },
+    "recorder": {
+      "key_components": [
+        "Recorder Control Header (Start, Pause, Resume, Stop, Clear, Save, Export JSON)",
+        "Status Indicator (IDLE, STARTING, RECORDING, PAUSED, STOPPING, COMPLETED, FAILED) with animated pulse badge",
+        "Session Details Bar (Duration Counter 00:00:00, Action Count, Active Package Name e.g. com.bank.mobile)",
+        "Live Device Mirroring View (Latest captured Android screen + interactive bounding boxes for detected UI nodes)",
+        "Live Event Feed Drawer (Streaming logs of touch, gesture, and hierarchy dump events)",
+        "Quick Assertion / Verification Point Injector"
+      ]
+    },
+    "sessions": {
+      "key_components": [
+        "Filterable Sessions Data Table (Session ID, Device Model, Package Name, Total Steps, Duration, Created At, Triggered By, Actions)",
+        "Batch Export (JSON, Appium Test script stub)",
+        "Session Details Drawer with execution logs"
+      ]
+    },
+    "recorded_steps": {
+      "key_components": [
+        "Interactive Step Timeline (Step #, Action Icon, Action Type, Target Element Label, Primary Locator e.g. XPath/Resource-ID, AI Confidence Badge %, Capture Source ADB/Accessibility, Thumbnail)",
+        "Step Reordering & Warning Alert for dependency shifts",
+        "Inspect Slide-Over Drawer (Raw XML Tree Inspector, Raw JSON Payload, Step Name Edit, Description, Verification Point Toggle, Remove Step)",
+        "Locator Strategy Switcher (Accessibility ID, Resource ID, XPath, Relative Coordinates)"
+      ]
+    },
+    "settings": {
+      "key_components": [
+        "Agent Configuration (Pairing Token, Host/Port, Heartbeat Interval)",
+        "Capture & Precision Settings (Screenshot frequency ms, Quality %, High-FPS Mode)",
+        "Security & Sensitive Data Masking (Redaction Toggle, Masking Keyword Tag Input e.g. 'password, secret, ssn, pin, token')",
+        "Data Retention & Cleanup (Log Retention Days)",
+        "UI & Localization (Language selection TR/EN, Dark/Light Theme Switcher)",
+        "Audit Log Table (User actions, config updates, agent pairings)"
+      ]
+    },
+    "planned_modules": {
+      "badge_text": { "tr": "Planlandı — Henüz Uygulanmadı", "en": "Planned — Not Implemented" },
+      "display_style": "Card with subtle dashed border, Lock/Sparkles icon, feature roadmap bullet points, and 'Get Notified / Early Access' request toggle"
+    }
+  },
+  "demo_data_policy": {
+    "required_label": "DEMO",
+    "badge_style": "inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20",
+    "note": "All simulated ADB devices, sample recorded sessions, and mock screen hierarchy snapshots MUST clearly carry a DEMO badge."
+  },
+  "localization_keys": {
+    "tr": {
+      "app_title": "AI Mobile Test Studio",
+      "app_subtitle": "Kurumsal Mobil Test Otomasyonu Kaydedicisi ve AI Kod Üreteci",
+      "agent_status_connected": "Yerel Kayıt Ajanı Bağlı",
+      "agent_status_disconnected": "Yerel Kayıt Ajanı Bağlı Değil",
+      "active_device": "Aktif Cihaz",
+      "no_active_device": "Seçili Cihaz Yok",
+      "status_idle": "BOŞTA",
+      "status_starting": "BAŞLATILIYOR",
+      "status_recording": "KAYDEDİLİYOR",
+      "status_paused": "DURAKLATILDI",
+      "status_stopping": "DURDURULUYOR",
+      "status_completed": "TAMAMLANDI",
+      "status_failed": "BAŞARISIZ",
+      "btn_start": "Kaydı Başlat",
+      "btn_pause": "Duraklat",
+      "btn_resume": "Devam Et",
+      "btn_stop": "Durdur",
+      "btn_clear": "Temizle",
+      "btn_save": "Oturumu Kaydet",
+      "btn_export_json": "JSON Dışa Aktar",
+      "btn_refresh": "Yenile",
+      "theme_dark": "Karanlık",
+      "theme_light": "Aydınlık",
+      "language": "Dil",
+      "demo_tag": "DEMO"
+    },
+    "en": {
+      "app_title": "AI Mobile Test Studio",
+      "app_subtitle": "Enterprise Mobile Test Automation Recorder & AI Code Generation Platform",
+      "agent_status_connected": "Local Recorder Agent Connected",
+      "agent_status_disconnected": "Local Recorder Agent is Not Connected",
+      "active_device": "Active Device",
+      "no_active_device": "No Active Device",
+      "status_idle": "IDLE",
+      "status_starting": "STARTING",
+      "status_recording": "RECORDING",
+      "status_paused": "PAUSED",
+      "status_stopping": "STOPPING",
+      "status_completed": "COMPLETED",
+      "status_failed": "FAILED",
+      "btn_start": "Start Recording",
+      "btn_pause": "Pause",
+      "btn_resume": "Resume",
+      "btn_stop": "Stop",
+      "btn_clear": "Clear",
+      "btn_save": "Save Session",
+      "btn_export_json": "Export JSON",
+      "btn_refresh": "Refresh",
+      "theme_dark": "Dark",
+      "theme_light": "Light",
+      "language": "Language",
+      "demo_tag": "DEMO"
+    }
+  },
+  "testing_and_data_ids": {
+    "rule": "Every interactive button, link, input, table row, dropdown, toggle, and key metric container MUST have a kebab-case data-testid attribute.",
+    "examples": [
+      "data-testid='sidebar-link-dashboard'",
+      "data-testid='sidebar-link-devices'",
+      "data-testid='sidebar-link-recorder'",
+      "data-testid='recorder-start-button'",
+      "data-testid='recorder-pause-button'",
+      "data-testid='recorder-stop-button'",
+      "data-testid='device-refresh-button'",
+      "data-testid='device-select-button-demo-01'",
+      "data-testid='language-toggle-button'",
+      "data-testid='theme-toggle-button'",
+      "data-testid='inspect-step-drawer'",
+      "data-testid='settings-save-button'"
+    ]
+  },
+  "image_urls": {
+    "developer_workspace": {
+      "url": "https://images.unsplash.com/photo-1719400471588-575b23e27bd7?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "description": "Developer setup with dark theme IDE windows and code inspector"
+    },
+    "laptop_code": {
+      "url": "https://images.unsplash.com/photo-1692106979244-a2ac98253f6b?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "description": "Developer laptop displaying code editor"
+    },
+    "mobile_testing_phone": {
+      "url": "https://images.unsplash.com/photo-1603566234499-85676f87022f?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "description": "Mobile smartphone hardware on developer desk"
+    }
+  },
+  "instructions_for_main_agent": [
+    "1. Read state & preferences from React context or local storage for dark/light theme and TR/EN language.",
+    "2. Implement a unified layout header with a live Agent Connection Status Badge (Green pulse when connected, Amber warning when disconnected).",
+    "3. On the Devices page, include a simulated toggle to mimic 'Agent Connected' vs 'Agent Disconnected' state to easily demonstrate the empty state.",
+    "4. For the Recorder page, build a full state machine using React state (IDLE -> STARTING -> RECORDING -> PAUSED -> STOPPING -> COMPLETED / FAILED) with realistic timer, live step counter, and interactive screen screenshot mirror.",
+    "5. For Recorded Steps, support drag/reorder or move up/down with confirmation warning, editing step name/locator, adding verification point (assertion), and opening a side drawer for XML hierarchy & JSON view.",
+    "6. Ensure all 'Planned' pages (Locator Inspector, AI Analysis, Code Generator, Jira Integration) display a crisp 'Planned — Not Implemented' banner with roadmap details.",
+    "7. Ensure 100% test coverage readiness by attaching data-testid attributes to all controls."
+  ]
+}
