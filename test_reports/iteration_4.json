@@ -1,0 +1,14 @@
+{
+  "summary": "Read-only check that the app is back after the 502 (container resumed, supervisord restarted 15:58:19 UTC). External / returned 200. /api/health returned 200 {status:ok, schemaVersion:1.0}. /api/status and /api/settings returned 200, and both show agent_token_configured=true with token created_at 2026-10-26T13:51:57, so pairing data was preserved. UI: the dashboard, devices, recorder, sessions, recorded-steps and settings pages all rendered from the sidebar links. The Devices page shows agent-not-connected-banner, which is expected. On Settings: settings-agent-panel is visible, settings-token-status shows 'Token yapılandırılmış' / 'Token configured', the properties block contains backend.url=https://test-recorder-ai.preview.emergentagent.com, settings-generate-token-button is present but was not clicked, and the audit panel shows 50 rows. The TR/EN toggle worked both ways. No console errors and no /api responses >=400 during navigation. No writes were made: no token generation, settings changes, session changes or agent runs.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": ["/app/test_reports/iteration_4.json"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Read-only verification only. Agent token is configured and must not be rotated, because the user's real Android agent will pair with it. The planned pages (locator-inspector, ai-analysis, code-generator, jira-integration) are locked Phase-1 placeholders without a *-page testid, which is expected."
+}
