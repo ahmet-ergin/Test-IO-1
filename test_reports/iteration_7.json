@@ -1,0 +1,33 @@
+{
+  "summary": "Retested the iteration 6 fixes for the Code Generator. Safety: a Playwright route guard aborted POST */replays and heartbeats, no session mutations were made, and localStorage 'amts.codegen.config.v1' was cleared at the end (confirmed null). BACKEND: test_codegen_external.py now has 5 new tests and passes 20/20 against the public URL. The isolated suites test_codegen.py and test_units.py pass 27/27. Verified: renaming 'public class Deneme3Steps' to 'OtherName' gives javac FAIL with a 'dosya yoluyla eşleşmiyor' detail and an overall FAILED. Changing the package to com.other also gives FAIL/FAILED. Unchanged files are still VERIFIED. javaVersion 21 gives javac PARTIAL and NOT_VERIFIED on generate, on validate, and in the ZIP header X-AMTS-Validation. FRONTEND: all requested flows pass. The 422 toast has no 'Value error, ' prefix. An invalid saved config (inherited driver mode, empty baseClass) shows an inline cg-plan-error after reload. Both cg-plan-error-reset and cg-config-reset restore the defaults, clear storage and load the plan. After generating, changing a config field (text, switch or select) sets data-status=STALE. Edit, then cg-file-reset, restores VERIFIED without clicking Doğrula. Typing a character and deleting it also restores VERIFIED. The Java 21 banner shows NOT_VERIFIED / PARTIAL. DENEME-3 generate is VERIFIED, and the ZIP amts-deneme-3-gauge.zip downloads with a VERIFIED toast. Found 2 minor state edge cases (see issues).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "CodeGenerator.edit (pristine restore)", "issue": "The pristine check uses '!planStale'. 'Adımları incele' after a config change sets planStale=false while the files are still from the old config. A later edit plus cg-file-reset then restores genValidation, which came from the old config. Reproduced: generate with Java 21 (NOT_VERIFIED), switch to Java 11, click Adımları incele, edit, reset. The banner shows NOT_VERIFIED from the Java 21 run. The reverse case can show VERIFIED for a config the files were not validated against. Fix: store the config used at generate time (e.g. JSON.stringify(cleanCfg(cfg))) and restore genValidation only if the current config equals it and the files equal the originals.", "selector": "[data-testid=cg-validation-status]", "priority": "LOW"},
+      {"component": "CodeGenerator.resetCfg", "issue": "resetCfg does not mark the validation stale when files exist (updateCfg does). After a header 'Varsayılanlara dön' with generated files, the banner keeps the old config's result even though Validate and ZIP now use the defaults. The auto-review also switches to the review tab (setTab('review')). There is no try/catch around http.get('/codegen/defaults').", "selector": "[data-testid=cg-config-reset]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "CodeGenerator after reload with invalid config", "issues": ["The same 422 error toast appears twice. The auto-plan effect likely runs twice: React StrictMode double-runs the defaults fetch, so setCfg is called twice and review() has no guard against running twice. It is probably dev-only, but a guard (skip if busy==='plan') would avoid it."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_codegen_external.py", "/app/test_reports/pytest/pytest_codegen_external.xml", "/app/test_reports/pytest/pytest_codegen_isolated.xml"],
+  "action_items": [
+    "Optional (LOW): in edit(), restore genValidation only when the current config equals the config used at generate time, not just when !planStale",
+    "Optional (LOW): resetCfg should setStale(true) when files exist, as updateCfg does, and handle errors"
+  ],
+  "critical_code_review_comments": [
+    "validate.check_javac: the path/package/class check is correct. Note that _CLS only matches a 'public' top-level type at line start, so a file whose only class is package-private gets FAIL ('?'). This is acceptable but worth a clearer message",
+    "CodeGenerator.edit calls setValidation inside the setFiles updater function. That is a side effect in an updater; it works, but computing pristine outside the updater is cleaner",
+    "api.errMsg strips 'Value error, ' only for detail[0]; multiple 422 errors show only the first one"
+  ],
+  "updated_files": ["/app/backend/tests/test_codegen_external.py"],
+  "success_rate": {"backend": "100% (20/20 external + 27/27 isolated)", "frontend": "100% of requested flows (2 low-priority edge cases)"},
+  "seed_data_creation": "None. The codegen endpoints are read-only.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run the external suite with: export REACT_APP_BACKEND_URL=...; pytest tests/test_codegen_external.py -n 0 (pytest.ini enables xdist). Never POST */replays or send heartbeats; the real agent and device are connected. DENEME-3 session id is 976206fa-7e7d-4da1-b8c8-399f2d24f955. The locatorStorage select is inside a collapsed accordion section; open cg-section-<value> first. Clear localStorage 'amts.codegen.config.v1' after UI config tests."
+}

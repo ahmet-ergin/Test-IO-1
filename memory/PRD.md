@@ -32,8 +32,17 @@ backend/ (FastAPI: api, core, models, services, schemas, tests) · frontend/ (Re
 - Tests: backend 36 isolated + 7 read-only external; Java 28 (7 new ReplayRunner tests with a fake Appium HTTP server); iteration_5 passed
 - Physical-device replay via the AMTS UI: NOT YET VERIFIED (user to run docs/setup/REPLAY_MVP.md)
 
+## Iteration 4 (2026-10-26) — Code Generator (Java + Appium 2 + Gauge)
+- User choices: integrate into the existing framework (no new project/driver), alternatives in comments, unsupported steps generated but marked (throw), Turkish spec steps, configurable framework integration, secrets as test-data keys, preview + edit + validation, ZIP
+- Backend: `services/codegen/` (config, planner, render, validate, service, javautil) + `api/codegen_routes.py` (/codegen/sessions, defaults, plan, generate, validate, zip); `_step_out` now includes `action` (schema updated in backend/schemas and shared/contracts)
+- Validation: Gauge 1:1 matching, collision check, path↔package check, javac against `backend/codegen_lib` jars (java-client 9.5.0, selenium 4.34.0, gauge-java 0.11.1) with stubs for framework classes; VERIFIED only if javac passes for the selected Java version
+- Frontend: /code-generator (Faz 1 menu), ConfigPanel, PlanReview, CodePreview (editable), ValidationPanel, ZIP download; config in localStorage `amts.codegen.config.v1`
+- Tests: backend isolated 43 passed (7 codegen) + external 20 codegen + 7 replay; iterations 6 & 7 passed
+- Docs: docs/CODEGEN.md
+
 ## Not yet done / backlog
 - P0: Real-device acceptance test on user's Mac (docs/setup/LOCAL_VALIDATION.md); build companion APK
 - P0: User runs physical-device replay acceptance (REPLAY_MVP.md)
+- P1: User integrates generated code into the real framework and reports actual driver/helper signatures
 - P1: Phase 2 Locator Engine (on-device validation, scoring) — only after approval
 - P2: Phase 3 AI, Phase 4 Code generator, Phase 5 Jira/Zephyr, iOS; TypeScript migration; Postgres adapter if required

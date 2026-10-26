@@ -162,3 +162,55 @@ def test_export_has_action():
     assert r.status_code == 200
     st = r.json()["steps"]
     assert st and st[0]["action"] == "TAP"
+
+
+# --- iteration 7: javac path/package/class match + Java 21 partial
+def _validate(files, config=None):
+    r = requests.post(f"{API}/validate", json={"sessionId": D3, "config": config or {}, "files": files}, timeout=T)
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def test_validate_renamed_class_fails(d3):
+    files = [dict(f) for f in d3["files"]]
+    s = next(f for f in files if f["role"] == "steps")
+    assert "public class Deneme3Steps" in s["content"]
+    s["content"] = s["content"].replace("public class Deneme3Steps", "public class OtherName")
+    v = _validate(files)
+    assert v["status"] == "FAILED"
+    jc = next(c for c in v["checks"] if c["id"] == "javac")
+    assert jc["status"] == "FAIL"
+    assert any("dosya yoluyla eşleşmiyor" in d for d in jc["details"]), jc
+
+
+def test_validate_changed_package_fails(d3):
+    files = [dict(f) for f in d3["files"]]
+    s = next(f for f in files if f["role"] == "steps")
+    s["content"] = s["content"].replace("package com.example.steps;", "package com.other;", 1)
+    v = _validate(files)
+    assert v["status"] == "FAILED"
+    jc = next(c for c in v["checks"] if c["id"] == "javac")
+    assert jc["status"] == "FAIL" and any("dosya yoluyla eşleşmiyor" in d for d in jc["details"]), jc
+
+
+def test_validate_unchanged_still_verified(d3):
+    assert _validate([dict(f) for f in d3["files"]])["status"] == "VERIFIED"
+
+
+def test_java21_partial_not_verified():
+    res = gen(D3, {"javaVersion": "21"})
+    jc = next(c for c in res["validation"]["checks"] if c["id"] == "javac")
+    assert jc["status"] == "PARTIAL", jc
+    assert res["validation"]["status"] == "NOT_VERIFIED"
+    v = _validate(res["files"], {"javaVersion": "21"})
+    assert v["status"] == "NOT_VERIFIED"
+    z = requests.post(f"{API}/zip", json={"sessionId": D3, "config": {"javaVersion": "21"}, "files": res["files"]}, timeout=T)
+    assert z.status_code == 200 and z.headers["X-AMTS-Validation"] == "NOT_VERIFIED"
+
+
+def test_422_message_has_value_error_prefix_in_raw():
+    # The frontend strips 'Value error, '; record the raw backend message shape
+    r = requests.post(f"{API}/generate", json={"sessionId": D3, "config": {"driver": {"mode": "INHERITED_METHOD"}}}, timeout=T)
+    assert r.status_code == 422
+    body = r.json()
+    print("422 body:", body)

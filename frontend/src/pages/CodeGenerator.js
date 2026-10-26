@@ -38,6 +38,7 @@ export default function CodeGenerator() {
   const [planStale, setPlanStale] = useState(false);
   const [planError, setPlanError] = useState(null);
   const [genValidation, setGenValidation] = useState(null);
+  const [genCfg, setGenCfg] = useState("");
   const [files, setFiles] = useState([]);
   const [original, setOriginal] = useState([]);
   const [active, setActive] = useState(0);
@@ -60,9 +61,12 @@ export default function CodeGenerator() {
 
   const updateCfg = (c) => { setCfg(c); setPlanStale(true); if (files.length) setStale(true); localStorage.setItem(STORAGE, JSON.stringify(c)); };
   const resetCfg = async () => {
-    localStorage.removeItem(STORAGE);
-    const { data } = await http.get("/codegen/defaults");
-    setCfg(data); setPlan(null); setPlanError(null);
+    try {
+      const { data } = await http.get("/codegen/defaults");
+      localStorage.removeItem(STORAGE);
+      setCfg(data); setPlanError(null); setPlanStale(true);
+      if (files.length) setStale(true); else setPlan(null);
+    } catch (e) { toast.error(errMsg(e)); }
   };
 
   const review = useCallback(async () => {
@@ -83,7 +87,7 @@ export default function CodeGenerator() {
     try {
       const { data } = await http.post("/codegen/generate", { sessionId, config: cleanCfg(cfg) });
       setPlan(data.plan); setPlanStale(false); setPlanError(null); setFiles(data.files); setOriginal(data.files);
-      setValidation(data.validation); setGenValidation(data.validation);
+      setValidation(data.validation); setGenValidation(data.validation); setGenCfg(JSON.stringify(cleanCfg(cfg)));
       setStale(false); setActive(0); setTab("code");
       toast.success(`Kod üretildi — doğrulama: ${data.validation.status}`);
     } catch (e) { setPlanError(errMsg(e)); toast.error(errMsg(e)); } finally { setBusy(""); }
@@ -112,7 +116,7 @@ export default function CodeGenerator() {
   const edit = (i, content) => {
     setFiles((fs) => {
       const next = fs.map((f, j) => (j === i ? { ...f, content } : f));
-      const pristine = !planStale && next.every((f, j) => f.content === original[j]?.content);
+      const pristine = JSON.stringify(cleanCfg(cfg)) === genCfg && next.every((f, j) => f.content === original[j]?.content);
       if (pristine) setValidation(genValidation);
       setStale(!pristine);
       return next;
