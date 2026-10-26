@@ -91,3 +91,9 @@ backend/artifacts/
 android-companion/.gradle/
 android-companion/app/build/
 android-companion/local.properties
+.env
+.env.*
+*.env
+credentials.json
+*.key
+.credentials
