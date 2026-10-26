@@ -12,6 +12,7 @@
     "platform": {"enum": ["ANDROID", "IOS"]},
     "status": {"enum": ["IDLE", "STARTING", "RECORDING", "PAUSED", "STOPPING", "COMPLETED", "FAILED"]},
     "demo": {"type": "boolean", "description": "true = synthetic data, never from a real device"},
+    "environment": {"enum": ["REAL_DEVICE", "SIMULATED_ADB", "DEMO", null], "description": "REAL_DEVICE = physical/emulator device via real adb; SIMULATED_ADB = fake-adb contract test"},
     "createdAt": {"type": ["string", "null"], "format": "date-time"},
     "startedAt": {"type": ["string", "null"], "format": "date-time"},
     "endedAt": {"type": ["string", "null"], "format": "date-time"},

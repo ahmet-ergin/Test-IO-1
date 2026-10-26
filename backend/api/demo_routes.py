@@ -46,7 +46,7 @@ async def create_demo_session():
                                  "hierarchyRef": xml_ref, "screenshotRef": None, "screenshotStatus": "DISABLED",
                                  "limitations": ["DEMO data — synthetic, not captured from a device."]})
     await db.sessions.insert_one({
-        "id": sid, "name": "DEMO — EFT transfer (synthetic)", "status": "COMPLETED", "demo": True, "saved": False,
+        "id": sid, "name": "DEMO — EFT transfer (synthetic)", "status": "COMPLETED", "demo": True, "environment": "DEMO", "saved": False,
         "agent_id": None, "created_at": t0.isoformat(), "started_at": t0.isoformat(),
         "ended_at": (t0 + timedelta(seconds=len(STEPS) * 2)).isoformat(), "paused_at": None, "paused_total_ms": 0,
         "event_count": len(STEPS), "screen_count": 1, "package_name": PKG, "latest_screen_id": screen_id,

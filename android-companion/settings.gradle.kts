@@ -12,4 +12,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "amts-android-companion"
-include(":app")
+include(":app", ":sample-app")

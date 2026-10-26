@@ -78,6 +78,7 @@ def test_full_recording_flow(client, token):
     exp = client.get(f"/api/sessions/{sid}/export").json()
     assert validate_session_document(exp) == []
     assert exp["schemaVersion"] == "1.0" and exp["steps"][0]["name"] == "Tap login"
+    assert exp["environment"] == "REAL_DEVICE"
     assert exp["steps"][0]["verification"] is True
 
 
@@ -89,6 +90,15 @@ def test_device_disconnect_fails_session(client, token):
     s = client.get(f"/api/sessions/{sid}").json()
     assert s["status"] == "FAILED" and s["error"]["code"] == "DEVICE_DISCONNECTED"
     assert client.get("/api/devices").json()["devices"][0]["online"] is False
+
+
+def test_simulated_adb_sessions_are_labeled(client, token):
+    client.post("/api/agent/heartbeat", headers={"X-Agent-Token": token}, json={
+        "agentId": "agent-sim", "name": "sim", "version": "0.1.0",
+        "adb": {"available": True, "simulated": True, "version": "1.0.41 (SIMULATED)"}, "devices": [device("sim-1")]})
+    s = client.post("/api/sessions", json={"deviceSerial": "sim-1"}).json()
+    assert s["environment"] == "SIMULATED_ADB"
+    client.post(f"/api/sessions/{s['id']}/stop")
 
 
 def test_unauthorized_device_cannot_record(client, token):

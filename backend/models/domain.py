@@ -65,6 +65,7 @@ class AgentDevice(BaseModel):
 
 class AdbInfo(BaseModel):
     available: bool
+    simulated: bool = False
     version: Optional[str] = None
     error: Optional[str] = None
 

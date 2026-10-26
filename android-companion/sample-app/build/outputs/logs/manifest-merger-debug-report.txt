@@ -1,0 +1,61 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:3:1-17:12
+INJECTED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:3:1-17:12
+INJECTED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:3:1-17:12
+INJECTED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:3:1-17:12
+	package
+		INJECTED from /app/android-companion/sample-app/src/main/AndroidManifest.xml
+	android:versionName
+		INJECTED from /app/android-companion/sample-app/src/main/AndroidManifest.xml
+	android:versionCode
+		INJECTED from /app/android-companion/sample-app/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:3:11-69
+application
+ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:4:5-16:19
+INJECTED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:4:5-16:19
+	android:extractNativeLibs
+		INJECTED from /app/android-companion/sample-app/src/main/AndroidManifest.xml
+	android:label
+		ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:6:9-40
+	android:allowBackup
+		ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:5:9-36
+	android:theme
+		ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:7:9-60
+activity#com.amts.sampleapp.HomeActivity
+ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:8:9-13:20
+	android:exported
+		ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:8:48-71
+	android:name
+		ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:8:19-47
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:9:13-12:29
+action#android.intent.action.MAIN
+ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:10:17-69
+	android:name
+		ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:10:25-66
+category#android.intent.category.LAUNCHER
+ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:11:17-77
+	android:name
+		ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:11:27-74
+activity#com.amts.sampleapp.FormActivity
+ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:14:9-75
+	android:exported
+		ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:14:48-72
+	android:name
+		ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:14:19-47
+activity#com.amts.sampleapp.ResultActivity
+ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:15:9-77
+	android:exported
+		ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:15:50-74
+	android:name
+		ADDED from /app/android-companion/sample-app/src/main/AndroidManifest.xml:15:19-49
+uses-sdk
+INJECTED from /app/android-companion/sample-app/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /app/android-companion/sample-app/src/main/AndroidManifest.xml
+INJECTED from /app/android-companion/sample-app/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /app/android-companion/sample-app/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /app/android-companion/sample-app/src/main/AndroidManifest.xml

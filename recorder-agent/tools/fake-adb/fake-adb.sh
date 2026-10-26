@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # SIMULATED adb for contract/integration testing of the Recorder Agent WITHOUT a device.
 # Output produced through this script is NOT a real recording and must never be presented as one.
-# Usage: adb.path=/path/to/fake-adb.sh   (touch $FAKE_ADB_STATE/disconnected to simulate unplug)
+# Usage: adb.path=/path/to/fake-adb.sh   (touch $FAKE_ADB_STATE/disconnected to simulate unplug,
+#        touch $FAKE_ADB_STATE/getevent_denied to simulate restricted getevent)
 DIR="$(cd "$(dirname "$0")" && pwd)"
 STATE="${FAKE_ADB_STATE:-/tmp/fake-adb}"
 mkdir -p "$STATE"
@@ -25,7 +26,7 @@ case "$MODE:$CMD" in
   shell:"pm list packages"*) echo "package:com.amts.companion" ;;
   shell:"settings get secure enabled_accessibility_services") echo "com.amts.companion/com.amts.companion.RecorderAccessibilityService" ;;
   shell:"date +%s%3N") now_ms ;;
-  shell:"getevent -pl") cat "$DIR/getevent-caps.txt" ;;
+  shell:"getevent -pl") if [ -f "$STATE/getevent_denied" ]; then echo "could not open /dev/input/event2, Permission denied"; exit 1; fi; cat "$DIR/getevent-caps.txt" ;;
   shell:"uiautomator dump"*) echo "UI hierchary dumped to: /sdcard/amts_window_dump.xml" ;;
   exec-out:cat*) cat "$DIR/hierarchy.xml" ;;
   exec-out:"screencap -p") cat "$DIR/screen.png" ;;
@@ -34,6 +35,7 @@ case "$MODE:$CMD" in
   shell:"dumpsys input") echo "    SurfaceOrientation: 0" ;;
   shell:"dumpsys input_method") echo "  mInputShown=false" ;;
   shell:"getevent -lt")
+    if [ -f "$STATE/getevent_denied" ]; then echo "could not open /dev/input/event2, Permission denied"; sleep 100000; fi
     sleep 4
     for l in "EV_ABS       ABS_MT_TRACKING_ID   00000001" "EV_ABS       ABS_MT_POSITION_X    000000e1" \
              "EV_ABS       ABS_MT_POSITION_Y    000000e6" "EV_KEY       BTN_TOUCH            DOWN" \
@@ -45,6 +47,7 @@ case "$MODE:$CMD" in
     echo "[   107.000000] /dev/input/event1: EV_KEY       KEY_BACK             DOWN"
     echo "[   107.050000] /dev/input/event1: EV_KEY       KEY_BACK             UP"
     sleep 100000 ;;
+  logcat:"-d"*) echo "{\"v\":1,\"type\":\"SERVICE_CONNECTED\",\"ts\":$(now_ms)}" ;;
   logcat:*)
     sleep 4
     T=$(now_ms)

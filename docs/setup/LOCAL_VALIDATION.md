@@ -1,61 +1,73 @@
-# Local setup & real-device acceptance test (macOS)
+# Running AI Mobile Test Studio on your Mac (Phase 1)
 
-> Real-device acceptance criteria are **NOT yet passed**. They require the steps below on your Mac with a physical Android device.
+Everything that touches the phone runs **on your Mac**. The web UI/backend can be the hosted preview or a local copy.
 
-## Requirements
-* macOS, JDK 11+ (`java -version`), Maven 3.8+, Android platform-tools (`adb version`)
-* Android Studio (or Android SDK + Gradle 8) to build the companion APK, minSdk 26 (Android 8)
-* A test Android device with Developer options + USB debugging, a **test build** of the app and synthetic data
-* Stop any Appium/UiAutomator2 session on the device while recording (it blocks `uiautomator dump`)
-
-## 1. Pair the agent
-1. Open the web UI → **Settings → Agent Pairing → Generate New Token** (shown once).
-2. `cp recorder-agent/agent.properties.example recorder-agent/agent.properties` and paste `backend.url` and `agent.token`. The file is git-ignored.
-
-## 2. Build & start the agent
+## 0. One-time tool installation (Homebrew)
 ```bash
-cd recorder-agent
-mvn -q package                      # runs 21 unit tests
-java -jar target/recorder-agent.jar agent.properties
+brew install --cask temurin@17            # JDK 17: required by Android Gradle Plugin 8.2 to BUILD the APK
+brew install --cask temurin@11            # optional: run the agent on exactly Java 11 (it also runs on 17+)
+brew install maven                        # Maven 3.8+
+brew install --cask android-platform-tools  # adb
+# Android SDK (pick one): Android Studio (SDK at ~/Library/Android/sdk), or:
+brew install --cask android-commandlinetools
+sdkmanager "platforms;android-34" "build-tools;34.0.0"
 ```
-Expected log: `AI Mobile Test Studio Recorder Agent 0.1.0 -> https://...`. The UI header turns green.
+Check: `java -version`, `mvn -v`, `adb version`.
+List installed JDKs: `/usr/libexec/java_home -V`. Select one per shell: `export JAVA_HOME=$(/usr/libexec/java_home -v 17)`.
 
-## 3. Build & enable the companion (recommended)
+## 1. Phone preparation (test device only, synthetic data)
+1. Settings → About phone → tap *Build number* 7× → Developer options → **USB debugging ON**.
+2. Connect USB, accept the *Allow USB debugging* prompt, check `adb devices -l` shows `device` (not `unauthorized`).
+3. Unlock the screen and keep it on (Developer options → *Stay awake*).
+4. Close any Appium / UiAutomator2 session (it blocks `uiautomator dump` and accessibility capture).
+
+## 2. Build & install the companion + sample app
 ```bash
 cd android-companion
-gradle wrapper && ./gradlew assembleDebug      # or open the folder in Android Studio
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+echo "sdk.dir=$HOME/Library/Android/sdk" > local.properties     # adjust if your SDK is elsewhere
+./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk                 # AMTS Recorder Companion
+adb install -r sample-app/build/outputs/apk/debug/sample-app-debug.apk   # AMTS Sample App (non-sensitive test app)
 ```
-On the device: Settings → Accessibility → *AI Mobile Test Studio Recorder* → On. (Or `adb shell settings put secure enabled_accessibility_services com.amts.companion/com.amts.companion.RecorderAccessibilityService` + `adb shell settings put secure accessibility_enabled 1`.)
-Check: `adb logcat -s AMTS_EVT:I` prints JSON lines when you tap.
-Devices page → column *Companion* = **Enabled**.
+Prebuilt debug APKs (built in the Linux CI environment, see `docs/TEST_REPORT.md`) are also in `android-companion/prebuilt/` — verify with `shasum -a 256 -c android-companion/prebuilt/SHA256SUMS`. Building yourself is preferred.
 
-## 4. Acceptance checklist
-| # | Check | How |
-|---|---|---|
-| D1 | Agent starts on macOS | step 2 |
-| D2 | Device detected | Devices page shows model, Android version, serial, USB, ADB available |
-| D3 | Unauthorized handled | revoke USB debugging authorizations → row shows UNAUTHORIZED + hint |
-| D4 | Disconnect handled | during a recording unplug USB → session **FAILED / DEVICE_DISCONNECTED** within ~2 s; device shows Offline |
-| R1 | Start | Devices → Select → Recorder → Start Recording → status RECORDING, initial SCREEN_CHANGE appears |
-| R2 | Real actions | tap a button, type into a text field, type into a password field, scroll a list, press BACK |
-| R3 | Captured | Live feed shows TAP (HYBRID), INPUT_TEXT, INPUT_TEXT `[MASKED · n]`, SCROLL, BACK, SCREEN_CHANGE |
-| R4 | Snapshots | Latest screen updates; events reference screenshots/XML (Recorded Steps → Inspect → tabs) |
-| R5 | Pause/Resume | actions during PAUSED are not recorded |
-| R6 | Stop + Save | Stop → COMPLETED → Save Session |
-| J1 | Valid JSON | Export JSON; validate: `python3 -c "import json,jsonschema;jsonschema.validate(json.load(open('recording-<id>.json')),json.load(open('shared/contracts/recording-session.v1.schema.json')))"` |
-| J2 | Sequence/timestamps | `sequence` strictly increasing, ISO timestamps |
-| J3 | Missing metadata | ACCESSIBILITY-only taps have `coordinates: null`; uncertain taps flagged |
-| J4 | Masking | no password/OTP value appears anywhere in the export or XML artifacts |
-| S1 | FLAG_SECURE app | screenshotStatus `BLOCKED_SECURE`, no image stored |
-| S2 | ADB-only mode | disable the companion → recording still works, limitation banner shown, lower confidence |
+Enable the accessibility service (either way):
+* UI: open **AMTS Recorder Companion** → *Open Accessibility Settings* → *AI Mobile Test Studio Recorder* → On.
+* adb:
+  ```bash
+  adb shell settings put secure enabled_accessibility_services com.amts.companion/com.amts.companion.RecorderAccessibilityService
+  adb shell settings put secure accessibility_enabled 1
+  ```
+  (This overwrites other enabled services; use the UI if you rely on others.)
 
-Record results (device model, Android version, app, pass/fail per row) in `docs/setup/ACCEPTANCE_RESULTS.md`.
+Verify in the companion app: *Enabled in Accessibility settings: YES* and *Service connected (running): YES* (both green). Tapping in another app increases *Events emitted*.
+If the toggle is greyed out (Android 13+ "Restricted setting"): App info → ⋮ → *Allow restricted settings*, then retry.
 
-## Simulated contract test (no device)
-`recorder-agent/tools/fake-adb/fake-adb.sh` is a **simulated adb** used only to test agent ⇄ backend contracts. Set `adb.path` to it. Its output is synthetic and must never be reported as a real recording.
-
-## Backend tests
+## 3. Build & check the Recorder Agent
 ```bash
-cd backend && python -m pytest tests -q     # 29 tests: state machine, masking, locators, API flow, disconnect, schema
+cd recorder-agent
+export JAVA_HOME=$(/usr/libexec/java_home -v 11)   # or 17
+mvn -q package                                      # compiles for Java 11 (--release 11) + runs 21 unit tests
+java -jar target/recorder-agent.jar --diagnose --watch 20
 ```
+`--diagnose` needs no backend. It prints PASS/WARN/FAIL for adb, device state, properties, companion installed/enabled, getevent access, hierarchy dump, activity, orientation, screenshot (BLOCKED_SECURE if the screen is protected) and companion logcat transport. With `--watch 20` tap/type/scroll/BACK on the phone and watch raw `getevent` touches and `companion` events print live. Options: `--serial <id>`, `--adb <path>`.
+
+## 4. Pair and run the agent
+1. Web UI → **Settings → Agent Pairing → Generate New Token** (shown once).
+2. `cp agent.properties.example agent.properties` and set `backend.url` (the URL shown in the snippet) and `agent.token`. `agent.properties` is git-ignored.
+3. `java -jar target/recorder-agent.jar agent.properties` — keep it running. The header turns green ("Yerel Kayıt Ajanı Bağlı").
+
+## 5. Record
+Devices → select your device (Companion = *Enabled*) → Recorder → optional package filter `com.amts.sampleapp` → **Kaydı Başlat / Start Recording** → use the phone → **Durdur / Stop** → **Oturumu Kaydet / Save** → **JSON Dışa Aktar / Export**.
+Then follow the acceptance script: `docs/setup/REAL_DEVICE_ACCEPTANCE.md`.
+
+## Troubleshooting
+| Symptom | Fix |
+|---|---|
+| Agent log `401 ... check agent.token` | regenerate the token, update agent.properties, restart agent |
+| Device `unauthorized` | accept the prompt on the phone; `adb kill-server && adb devices` |
+| `uiautomator dump failed` | unlock the screen, stop Appium/UiAutomator2, avoid long animations |
+| No companion events | companion app must show both YES; run `adb logcat -s AMTS_EVT:I` |
+| getevent WARN | some OEMs block `getevent` without root; recording continues companion-only (no coordinates, no hardware BACK). Root is never used. |
+| Screenshot BLOCKED_SECURE | app uses FLAG_SECURE; by design not bypassed, hierarchy still captured |

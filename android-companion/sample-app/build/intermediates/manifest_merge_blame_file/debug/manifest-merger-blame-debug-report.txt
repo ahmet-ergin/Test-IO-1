@@ -1,0 +1,53 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<!-- Non-sensitive test application for real-device acceptance of the recorder. Synthetic data only. -->
+3<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+4    package="com.amts.sampleapp"
+5    android:versionCode="1"
+6    android:versionName="0.1.0" >
+7
+8    <uses-sdk
+9        android:minSdkVersion="26"
+10        android:targetSdkVersion="34" />
+11
+12    <application
+12-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:4:5-16:19
+13        android:allowBackup="false"
+13-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:5:9-36
+14        android:debuggable="true"
+15        android:extractNativeLibs="false"
+16        android:label="AMTS Sample App"
+16-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:6:9-40
+17        android:theme="@android:style/Theme.Material.Light" >
+17-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:7:9-60
+18        <activity
+18-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:8:9-13:20
+19            android:name="com.amts.sampleapp.HomeActivity"
+19-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:8:19-47
+20            android:exported="true" >
+20-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:8:48-71
+21            <intent-filter>
+21-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:9:13-12:29
+22                <action android:name="android.intent.action.MAIN" />
+22-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:10:17-69
+22-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:10:25-66
+23
+24                <category android:name="android.intent.category.LAUNCHER" />
+24-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:11:17-77
+24-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:11:27-74
+25            </intent-filter>
+26        </activity>
+27        <activity
+27-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:14:9-75
+28            android:name="com.amts.sampleapp.FormActivity"
+28-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:14:19-47
+29            android:exported="false" />
+29-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:14:48-72
+30        <activity
+30-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:15:9-77
+31            android:name="com.amts.sampleapp.ResultActivity"
+31-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:15:19-49
+32            android:exported="false" />
+32-->/app/android-companion/sample-app/src/main/AndroidManifest.xml:15:50-74
+33    </application>
+34
+35</manifest>

@@ -3,6 +3,12 @@
     <string name="app_name">AMTS Recorder Companion</string>
     <string name="service_label">AI Mobile Test Studio Recorder</string>
     <string name="service_description">Records taps, text changes (password values are never recorded), scrolls and screen changes for test automation. Data is only readable over ADB by the local Recorder Agent. Use on test devices with synthetic data only.</string>
-    <string name="explanation">AI Mobile Test Studio Companion\n\nEnable the \"AI Mobile Test Studio Recorder\" accessibility service to let the local Recorder Agent capture UI interactions over ADB.\n\nTest devices and synthetic data only. Disable the service when not recording.</string>
+    <string name="explanation">AI Mobile Test Studio Companion\n\nEnable the \"AI Mobile Test Studio Recorder\" accessibility service so the local Recorder Agent can capture UI interactions over ADB. Test devices and synthetic data only. Disable the service when not recording.</string>
+    <string name="transport_note">Transport: logcat tag AMTS_EVT, read only over USB/ADB by the Recorder Agent. This app has no INTERNET permission. Password values are never written.</string>
     <string name="open_settings">Open Accessibility Settings</string>
+    <string name="status_enabled">Enabled in Accessibility settings: %1$s</string>
+    <string name="status_connected">Service connected (running): %1$s</string>
+    <string name="status_events">Events emitted since service start: %1$d (last: %2$s)</string>
+    <string name="yes">YES</string>
+    <string name="no">NO</string>
 </resources>

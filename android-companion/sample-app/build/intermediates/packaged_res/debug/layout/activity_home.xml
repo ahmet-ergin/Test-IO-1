@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:padding="24dp">
+    <TextView android:id="@+id/titleText" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="AMTS Sample Home" android:textSize="22sp" />
+    <Button android:id="@+id/transferButton" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="16dp" android:text="Transfer" />
+    <Button android:id="@+id/longPressButton" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:contentDescription="long_press_target" android:text="Long press me" />
+    <ListView android:id="@+id/itemList" android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:layout_marginTop="16dp" />
+</LinearLayout>

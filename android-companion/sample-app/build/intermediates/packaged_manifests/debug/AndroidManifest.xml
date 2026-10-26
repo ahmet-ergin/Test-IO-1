@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Non-sensitive test application for real-device acceptance of the recorder. Synthetic data only. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.amts.sampleapp"
+    android:versionCode="1"
+    android:versionName="0.1.0" >
+
+    <uses-sdk
+        android:minSdkVersion="26"
+        android:targetSdkVersion="34" />
+
+    <application
+        android:allowBackup="false"
+        android:debuggable="true"
+        android:extractNativeLibs="false"
+        android:label="AMTS Sample App"
+        android:theme="@android:style/Theme.Material.Light" >
+        <activity
+            android:name="com.amts.sampleapp.HomeActivity"
+            android:exported="true" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.amts.sampleapp.FormActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.amts.sampleapp.ResultActivity"
+            android:exported="false" />
+    </application>
+
+</manifest>

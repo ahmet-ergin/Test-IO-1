@@ -1,30 +1,34 @@
 # AI Mobile Test Studio
 
-Enterprise mobile test-automation recorder. **Phase 1 = Android Recorder MVP.** Phases 2–5 (Locator Engine, AI analysis, Java/Gauge code generation, Jira/Zephyr) are designed but **not implemented**.
+Enterprise mobile test-automation recorder. **Phase 1 = Android Recorder MVP.** Phases 2–5 (Locator Engine, AI analysis, Java/Gauge code generation, Jira/Zephyr) are designed but **not implemented**. The existing Java/Appium/Gauge framework is not used or modified.
 
-## Status (honest)
+## Status
 | Component | Status |
 |---|---|
-| Backend (FastAPI, `backend/`) | Implemented · 29 pytest tests passing |
+| Backend (FastAPI, `backend/`) | Implemented · 30 self-contained tests pass + 18 environment-dependent tests (see `docs/TEST_REPORT.md`) |
 | Web UI (React, `frontend/`) | Implemented · TR (default) / EN · dark / light |
-| Recorder Agent (Java 11 + Maven, `recorder-agent/`) | Implemented · 21 JUnit tests passing · end-to-end contract run against **simulated adb** passed (tap merge, masked PIN, BACK, disconnect) |
-| Android companion (Kotlin, `android-companion/`) | Source implemented · **not compiled here** (no Android SDK in this environment) |
-| Real-device acceptance | **Not yet performed** → `docs/setup/LOCAL_VALIDATION.md` |
-| Locator Engine (advanced), AI, Code Generator, Jira/Zephyr, iOS | Planned — contracts in `docs/architecture/FUTURE_CONTRACTS.md` |
+| Recorder Agent (Java 11 + Maven, `recorder-agent/`) | Implemented · built and tested on **real JDK 11** (21 JUnit tests) · `--diagnose` device checker · simulated-adb end-to-end passes |
+| Android companion (Kotlin, `android-companion/app`) | **APK builds** (debug) · setup screen with enabled/connected status · **not yet installed on a device** |
+| Sample test app (`android-companion/sample-app`) | **APK builds** · non-sensitive screens for acceptance testing |
+| Real-device acceptance | **NOT RUN** → `docs/setup/REAL_DEVICE_ACCEPTANCE.md` |
+
+## Docs
+* Mac setup and run: `docs/setup/LOCAL_VALIDATION.md`
+* Real-device acceptance script and results template: `docs/setup/REAL_DEVICE_ACCEPTANCE.md`, `docs/setup/ACCEPTANCE_RESULTS.md`
+* Supported / unsupported capture: `docs/setup/CAPABILITIES.md`
+* Build and test report: `docs/TEST_REPORT.md`
+* Architecture: `docs/architecture/ARCHITECTURE.md` · Future contracts: `docs/architecture/FUTURE_CONTRACTS.md` · API: `docs/api/API.md`
 
 ## Structure
 ```
-backend/            FastAPI: api/ (routes) · core/ (config, db, errors) · models/ · services/ · schemas/ · tests/
-frontend/           React UI: pages/ · components/ · context/ · hooks/ · i18n/ · lib/
-recorder-agent/     Java 11 local agent: adb/ · device/ · capture/ · events/ · session/ · transport/ · tools/fake-adb (SIMULATED)
-android-companion/  Kotlin AccessibilityService (logcat transport, no network permission)
-shared/contracts/   recording-session.v1.schema.json (canonical contract, identical copy in backend/schemas, test-enforced)
-docs/               architecture/ · api/ · setup/
+backend/            FastAPI: api/ · core/ · models/ · services/ · schemas/ · tests/
+frontend/           React UI
+recorder-agent/     Java 11 agent: adb/ device/ capture/ events/ session/ transport/ Diagnostics · tools/fake-adb (SIMULATED)
+android-companion/  Gradle project: app/ (AccessibilityService companion) · sample-app/ (test app) · prebuilt/ (debug APKs + SHA256SUMS)
+shared/contracts/   recording-session.v1.schema.json (canonical; identical copy in backend/schemas, enforced by a test)
+docs/
 ```
-Deviations from the proposed tree: `integrations/` is not created (no Phase 4/5 code yet — avoided empty implementations); the repository layer lives in `backend/services/` (MongoDB via Motor, the platform database); tests live next to each component (`backend/tests`, `recorder-agent/src/test`).
+`integrations/` is intentionally absent (no Phase 4/5 code yet).
 
-## Quick start
-See `docs/setup/LOCAL_VALIDATION.md`. Architecture: `docs/architecture/ARCHITECTURE.md`. API: `docs/api/API.md`.
-
-## Security notes
-No external AI calls exist. Passwords/OTPs are masked at companion, agent and backend. Screenshots of FLAG_SECURE screens are not bypassed. Agent token is hashed server-side; `agent.properties` is git-ignored. Use test devices and synthetic data only.
+## Result provenance
+Every session has `environment` set to `REAL_DEVICE`, `SIMULATED_ADB` (fake-adb contract tests) or `DEMO` (synthetic). Only `REAL_DEVICE` sessions count as device evidence.

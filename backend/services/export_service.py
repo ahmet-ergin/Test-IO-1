@@ -58,7 +58,7 @@ async def build_export(session_id: str) -> dict:
     dev = s.get("device") or {}
     doc = {
         "schemaVersion": SCHEMA_VERSION, "sessionId": s["id"], "name": s.get("name"), "platform": "ANDROID",
-        "status": s["status"], "demo": bool(s.get("demo")), "createdAt": s.get("created_at"),
+        "status": s["status"], "demo": bool(s.get("demo")), "environment": s.get("environment"), "createdAt": s.get("created_at"),
         "startedAt": s.get("started_at"), "endedAt": s.get("ended_at"), "durationMs": s["duration_ms"],
         "error": s.get("error"), "application": {"packageName": s.get("package_name")},
         "device": {k: dev.get(k) for k in ("serial", "model", "manufacturer", "androidVersion", "sdkInt")},

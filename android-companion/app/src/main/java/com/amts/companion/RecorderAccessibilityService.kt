@@ -17,6 +17,18 @@ class RecorderAccessibilityService : AccessibilityService() {
 
     private var lastImeBounds: String? = null
 
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        ServiceStatus.connected = true
+        emit(JSONObject().put("v", 1).put("type", "SERVICE_CONNECTED").put("ts", System.currentTimeMillis())
+            .put("version", BuildConfig.VERSION_NAME))
+    }
+
+    override fun onDestroy() {
+        ServiceStatus.connected = false
+        super.onDestroy()
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         val type = when (event.eventType) {
             AccessibilityEvent.TYPE_VIEW_CLICKED -> "CLICK"
@@ -41,9 +53,10 @@ class RecorderAccessibilityService : AccessibilityService() {
             val password = event.isPassword || source?.isPassword == true
             val showingHint = source?.isShowingHintText == true
             val text = if (showingHint) "" else event.text.joinToString("")
+            val masked = password || EventSerializer.isSensitive(source) || EventSerializer.looksLikeOtp(text)
             json.put("textLength", text.length)
-            json.put("masked", password)
-            json.put("textValue", if (password) JSONObject.NULL else EventSerializer.clip(text))
+            json.put("masked", masked)
+            json.put("textValue", if (masked) JSONObject.NULL else EventSerializer.clip(text))
         }
         emit(json)
     }
@@ -65,6 +78,7 @@ class RecorderAccessibilityService : AccessibilityService() {
 
     private fun emit(json: JSONObject) {
         Log.i(TAG, json.toString())
+        ServiceStatus.recordEmit(json.optString("type"))
     }
 
     override fun onInterrupt() = Unit

@@ -42,6 +42,10 @@ public class AgentApp {
 
     public static void main(String[] args) throws Exception {
         System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tF %1$tT %4$s %3$s - %5$s%6$s%n");
+        if (args.length > 0 && args[0].equals("--diagnose")) {
+            Diagnostics.run(args);
+            return;
+        }
         AgentConfig cfg = AgentConfig.load(Paths.get(args.length > 0 ? args[0] : "agent.properties"));
         LOG.info("AI Mobile Test Studio Recorder Agent " + VERSION + " -> " + cfg.backendUrl);
         new AgentApp(cfg).run();
@@ -80,6 +84,7 @@ public class AgentApp {
         try {
             adbInfo.put("version", adb.version());
             adbInfo.put("available", true);
+            adbInfo.put("simulated", String.valueOf(adbInfo.get("version")).contains("SIMULATED"));
             devices = discovery.discover();
         } catch (Exception e) {
             adbInfo.put("available", false);

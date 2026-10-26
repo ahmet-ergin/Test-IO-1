@@ -32,7 +32,8 @@ async def start_session(body: StartSessionRequest):
     ts = ss.now_iso()
     session = {
         "id": sid, "name": body.name or f"Recording {ts[:19].replace('T', ' ')}", "status": S.STARTING.value,
-        "demo": False, "saved": False, "agent_id": agent["id"], "created_at": ts, "started_at": None,
+        "demo": False, "saved": False, "agent_id": agent["id"],
+        "environment": "SIMULATED_ADB" if (agent.get("adb") or {}).get("simulated") else "REAL_DEVICE", "created_at": ts, "started_at": None,
         "ended_at": None, "paused_at": None, "paused_total_ms": 0, "event_count": 0, "screen_count": 0,
         "package_filter": body.packageFilter, "package_name": None, "latest_screen_id": None, "error": None,
         "limitations": [], "capture_mode": None,

@@ -7,13 +7,26 @@ import org.json.JSONObject
 
 object EventSerializer {
     private const val MAX_TEXT = 300
+    private val SENSITIVE = listOf("password", "passwd", "pin", "otp", "sms", "cvv", "cvc", "secret", "token",
+        "sifre", "şifre", "parola", "card_number")
+    private val OTP = Regex("\\d{4,8}")
+
+    fun looksLikeOtp(s: String): Boolean = OTP.matches(s.trim())
+
+    fun isSensitive(n: AccessibilityNodeInfo?): Boolean {
+        if (n == null) return false
+        if (n.isPassword) return true
+        val hay = listOf(n.viewIdResourceName, n.hintText, n.contentDescription)
+            .joinToString(" ") { it?.toString()?.lowercase() ?: "" }
+        return SENSITIVE.any { hay.contains(it) }
+    }
 
     fun clip(s: String?): String? = s?.let { if (it.length > MAX_TEXT) it.substring(0, MAX_TEXT) else it }
 
     fun node(n: AccessibilityNodeInfo): JSONObject {
         val r = Rect()
         n.getBoundsInScreen(r)
-        val password = n.isPassword
+        val password = isSensitive(n)
         return JSONObject()
             .put("resourceId", n.viewIdResourceName ?: JSONObject.NULL)
             .put("text", if (password) JSONObject.NULL else (clip(n.text?.toString()) ?: JSONObject.NULL))

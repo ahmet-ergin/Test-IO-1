@@ -38,6 +38,8 @@ import java.util.logging.Logger;
 public class RecordingSession {
     private static final Logger LOG = Logger.getLogger(RecordingSession.class.getName());
     private static final String COMPANION_TAG = "AMTS_EVT";
+    private static final String GETEVENT_DENIED = "getevent reported permission denied for some input devices; "
+            + "affected raw touches were not captured (root is not used).";
 
     public final String id;
     public final String serial;
@@ -91,14 +93,21 @@ public class RecordingSession {
                 + "element metadata resolved from hierarchy snapshots with lower confidence; text input not captured.");
         correlator = new EventCorrelator(companionActive);
         clockOffsetMs = computeClockOffset();
-        Map<String, int[]> touch = AdbParsers.parseTouchDevices(adb.shell(serial, 8000, "getevent -pl").text());
+        AdbClient.Result caps = adb.shell(serial, 8000, "getevent -pl");
+        Map<String, int[]> touch = AdbParsers.parseTouchDevices(caps.text());
+        boolean geteventDenied = (caps.text() + caps.stderr).contains("Permission denied");
         int[] size = AdbParsers.parseWmSize(adb.shell(serial, 5000, "wm size").text());
         if (touch.isEmpty() || size == null) {
-            limitations.add("No readable touchscreen via getevent; raw touch coordinates unavailable.");
+            limitations.add("getevent touchscreen not readable" + (geteventDenied ? " (permission denied)" : "")
+                    + ": raw touch coordinates unavailable. Root is not used; taps/scrolls rely on the companion.");
         } else {
             int[] max = touch.values().iterator().next();
             mapper = new CoordinateMapper(max[0], max[1], size[0], size[1]);
         }
+        if (mapper == null && !companionActive) limitations.add("No interaction capture source available: "
+                + "only screen changes (hierarchy polling) will be recorded.");
+        limitations.add("Not supported in Phase 1: soft-keyboard IME actions (Done/Next), gesture-navigation BACK "
+                + "(recorded as SWIPE), pinch/multi-finger gestures, WebView/Flutter internals without accessibility nodes.");
         Snapshot first = capturer.capture(screenshots, redact, keywords, null);
         upload(first);
         correlator.addReady(screenChange(first, "Initial screen at recording start."));
@@ -192,7 +201,13 @@ public class RecordingSession {
         });
         Process p = adb.stream(serial, "shell", "getevent", "-lt");
         streams.add(p);
-        readLines(p, "getevent", line -> parser.accept(line, System.currentTimeMillis()));
+        readLines(p, "getevent", line -> {
+            if (line.contains("Permission denied") || line.contains("could not open")) {
+                if (!limitations.contains(GETEVENT_DENIED)) limitations.add(GETEVENT_DENIED);
+                return;
+            }
+            parser.accept(line, System.currentTimeMillis());
+        });
     }
 
     private void startLogcat() throws Exception {

@@ -77,7 +77,8 @@ public class AdbClient {
         List<String> cmd = new ArrayList<>(Arrays.asList(adb, "-s", serial));
         cmd.addAll(Arrays.asList(args));
         LOG.fine("stream " + cmd);
-        return new ProcessBuilder(cmd).redirectError(ProcessBuilder.Redirect.DISCARD).start();
+        Process p = new ProcessBuilder(cmd).redirectErrorStream(true).start();
+        return p;
     }
 
     public String version() throws IOException {
