@@ -35,4 +35,4 @@ def device(serial="emulator-5554", state="device"):
 def heartbeat(client, token, devices, agent_id="agent-test"):
     return client.post("/api/agent/heartbeat", headers={"X-Agent-Token": token}, json={
         "agentId": agent_id, "name": "test-mac", "version": "0.1.0", "os": "Mac OS X",
-        "adb": {"available": True, "version": "35.0.1"}, "devices": devices})
+        "adb": {"available": True, "simulated": False, "version": "35.0.1"}, "devices": devices})

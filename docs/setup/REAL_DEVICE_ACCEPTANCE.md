@@ -4,7 +4,7 @@
 
 Rules for distinguishing results:
 * A run counts as a real-device result only if the session's **environment = `REAL_DEVICE`** (shown as a green *REAL DEVICE* tag in Sessions; `"environment"` in the export) and `--diagnose` shows **no** `SIMULATED adb` line.
-* `SIMULATED_ADB` sessions (fake-adb) and `DEMO` sessions never count.
+* `SIMULATED_ADB` sessions (fake-adb) and `DEMO` sessions never count. `EMULATOR` sessions (serial `emulator-*`) are useful but are reported separately from physical-device results. A session with `environment: null` (provenance not reported) does not count.
 
 App under test: **AMTS Sample App** (`com.amts.sampleapp`, synthetic data, no network). Screens: Home (Transfer button, *Long press me* button, 60-item list) → Form (Recipient name, PIN [password], SMS code [number]) → Result.
 

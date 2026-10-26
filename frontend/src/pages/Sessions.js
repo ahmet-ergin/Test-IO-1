@@ -46,7 +46,7 @@ export default function Sessions() {
                 <TableRow key={s.id} data-testid={`session-row-${s.id}`}>
                   <TableCell>
                     <div className="flex items-center gap-2 font-medium">{s.demo && <DemoBadge testId={`session-demo-badge-${s.id}`} />}{s.name}</div>
-                    <div className="flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground">{s.id.slice(0, 8)}{s.saved && <Tag tone="blue">SAVED</Tag>}{s.environment === "SIMULATED_ADB" && <Tag tone="amber" testId={`session-simulated-${s.id}`}>SIMULATED ADB</Tag>}{s.environment === "REAL_DEVICE" && <Tag tone="green" testId={`session-real-${s.id}`}>REAL DEVICE</Tag>}</div>
+                    <div className="flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground">{s.id.slice(0, 8)}{s.saved && <Tag tone="blue">SAVED</Tag>}{s.environment === "SIMULATED_ADB" && <Tag tone="amber" testId={`session-simulated-${s.id}`}>SIMULATED ADB</Tag>}{s.environment === "REAL_DEVICE" && <Tag tone="green" testId={`session-real-${s.id}`}>REAL DEVICE</Tag>}{s.environment === "EMULATOR" && <Tag tone="blue" testId={`session-emulator-${s.id}`}>EMULATOR</Tag>}</div>
                   </TableCell>
                   <TableCell className="text-xs">{s.device?.model}<div className="font-mono text-[10px] text-muted-foreground">{s.device?.serial}</div></TableCell>
                   <TableCell className="font-mono text-xs">{s.package_name || "—"}</TableCell>

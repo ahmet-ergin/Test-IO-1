@@ -65,6 +65,19 @@ async def active_session_for_device(serial: str):
     return await db.sessions.find_one({"device.serial": serial, "status": {"$in": [x.value for x in ACTIVE_STATES]}}, {"_id": 0})
 
 
+def environment_for(agent: dict, device: dict):
+    """Fail-closed provenance: REAL_DEVICE only when the agent explicitly reports non-simulated adb."""
+    simulated = (agent.get("adb") or {}).get("simulated")
+    if simulated is True:
+        return "SIMULATED_ADB"
+    if simulated is not False:
+        return None
+    model = (device.get("model") or "").lower()
+    if device["serial"].startswith("emulator-") or model.startswith(("sdk_gphone", "android sdk built for")):
+        return "EMULATOR"
+    return "REAL_DEVICE"
+
+
 def step_label(ev: dict) -> str:
     el = ev.get("element") or {}
     label = el.get("text") or el.get("contentDesc") or (el.get("resourceId") or "").split("/")[-1] or None

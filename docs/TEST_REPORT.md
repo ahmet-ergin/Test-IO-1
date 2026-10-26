@@ -26,6 +26,8 @@ Build-environment note: Google ships `aapt2` for Linux only as x86-64. On this a
 
 **About the "47 vs 29" numbers:** the old README listed 29 = the self-contained suites (`test_units.py` + `test_api_integration.py`). The earlier completion message's 47 added the 18 environment-dependent tests the testing agent wrote (16 + 2). This iteration adds 1 test (simulated-environment labeling), so it is now **30 self-contained + 18 environment-dependent = 48** backend tests, plus 21 Java tests.
 
+Provenance labeling is fail-closed: `REAL_DEVICE` only when the agent explicitly reports non-simulated adb and the device is not an emulator (`EMULATOR`). A missing flag gives `null`.
+
 Commands:
 ```bash
 cd backend && python -m pytest tests/test_units.py tests/test_api_integration.py -q -n 0

@@ -92,7 +92,7 @@ export default function Recorder() {
       </PageHeader>
       {app && !app.agentConnected && status === "IDLE" && <div className="mb-4"><AgentMissing /></div>}
       {session?.demo && <div className="mb-4 text-sm text-amber-500">DEMO · {t("demo_note")}</div>}
-      {session?.environment === "SIMULATED_ADB" && <div className="mb-4 text-sm text-amber-500" data-testid="recorder-simulated-banner">SIMULATED ADB — not a real device recording.</div>}
+      {session?.environment === "SIMULATED_ADB" && <div className="mb-4 text-sm text-amber-500" data-testid="recorder-simulated-banner">{t("rec_simulated_banner")}</div>}
       <Panel testId="recorder-status-bar" className="mb-4">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
           <KV label={t("rec_status")} value={<StatusBadge status={status} testId="recorder-status" />} />

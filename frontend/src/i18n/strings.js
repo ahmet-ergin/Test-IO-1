@@ -59,6 +59,7 @@ const tr = {
   dash_modules: "Modül Durumu", implemented: "UYGULANDI", planned_short: "PLANLANDI", none: "Yok",
   planned_badge: "Planlandı — Henüz Uygulanmadı", planned_intro: "Bu modül Faz 1 kapsamında değildir. Aşağıda yalnızca mimari sözleşme özetlenmiştir; çalışan bir özellik yoktur.",
   err_generic: "Beklenmeyen bir hata oluştu.", err_validation: "Geçersiz değer: aralık 500–60000 ms, saklama 1–3650 gün.",
+  rec_simulated_banner: "SİMÜLE ADB — gerçek cihaz kaydı değildir.",
   col_audit_action: "İşlem", col_audit_target: "Hedef",
 };
 
@@ -122,6 +123,7 @@ const en = {
   dash_modules: "Module Status", implemented: "IMPLEMENTED", planned_short: "PLANNED", none: "None",
   planned_badge: "Planned — Not Implemented", planned_intro: "This module is out of Phase 1 scope. Only the architectural contract is summarised below; there is no working feature.",
   err_generic: "An unexpected error occurred.", err_validation: "Invalid value: interval 500–60000 ms, retention 1–3650 days.",
+  rec_simulated_banner: "SIMULATED ADB — not a real device recording.",
   col_audit_action: "Action", col_audit_target: "Target",
 };
 

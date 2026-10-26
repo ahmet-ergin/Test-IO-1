@@ -78,7 +78,7 @@ def test_full_recording_flow(client, token):
     exp = client.get(f"/api/sessions/{sid}/export").json()
     assert validate_session_document(exp) == []
     assert exp["schemaVersion"] == "1.0" and exp["steps"][0]["name"] == "Tap login"
-    assert exp["environment"] == "REAL_DEVICE"
+    assert exp["environment"] == "EMULATOR"  # serial emulator-5554
     assert exp["steps"][0]["verification"] is True
 
 
@@ -99,6 +99,10 @@ def test_simulated_adb_sessions_are_labeled(client, token):
     s = client.post("/api/sessions", json={"deviceSerial": "sim-1"}).json()
     assert s["environment"] == "SIMULATED_ADB"
     client.post(f"/api/sessions/{s['id']}/stop")
+    from services.sessions_service import environment_for
+    assert environment_for({"adb": {"available": True}}, {"serial": "x"}) is None
+    assert environment_for({"adb": {"simulated": False}}, {"serial": "emulator-5554"}) == "EMULATOR"
+    assert environment_for({"adb": {"simulated": False}}, {"serial": "R58M"}) == "REAL_DEVICE"
 
 
 def test_unauthorized_device_cannot_record(client, token):

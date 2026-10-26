@@ -1,0 +1,34 @@
+{
+  "summary": "Iteration 2 (Phase 1 hardening, SIMULATED only - no physical device). All requested checks pass: backend self-contained 30/30 (20 units + 10 integration), external 16/16 (no agent), live-agent 2/2 (with simulated agent, AMTS_AGENT_RUNNING=1). Java agent builds offline on real JDK 11.0.32 (mvn -o clean package), 21/21 JUnit (7+9+5, 0 failures/errors), AgentApp.class major version 55. --diagnose: PASS lines + 'SIMULATED adb ... NOT from a real device' WARN, exit 0; getevent_denied -> WARN 'not readable (permission denied) -> no raw coordinates; root is NOT used', exit 0; disconnected -> FAIL device detected, exit 1; bad --adb path -> FAIL adb available, exit 1. run-simulated-e2e.sh: scenario 1 COMPLETED SIMULATED_ADB (SCREEN_CHANGE, TAP HYBRID 0.95 transferButton {225,230}, INPUT_TEXT masked length 4, BACK); scenario 2 COMPLETED with getevent limitation, TAP ACCESSIBILITY 0.85 no coords, no BACK; scenario 3 FAILED 'Android device disconnected during recording.'; all exports schema valid; script cleaned its sessions. environment field: SIMULATED_ADB for agent sessions, DEMO for demo sessions, exports validate; backend/schemas copy byte-identical to shared/contracts. UI: recording started from UI shows recorder-simulated-banner 'SIMULATED ADB — not a real device recording.'; Sessions shows session-simulated-{id}, 0 session-real tags, DEMO badge kept. Devices/Recorder/Sessions/Recorded Steps load in TR and EN. APKs: SHA256SUMS OK; aapt2 badging com.amts.companion (minSdk 26, targetSdk 34, launchable MainActivity) and com.amts.sampleapp (HomeActivity); companion manifest has the service with BIND_ACCESSIBILITY_SERVICE, exported=false, no uses-permission. Docs: none claim a real-device result; ACCEPTANCE_RESULTS rows all NOT RUN; TEST_REPORT counts match collected counts (20/10/16/2/21; 30+18=48; 47 vs 29 explained). Gradle rebuild was NOT re-run (optional, slow); APKs checked as prebuilt artifacts only.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/sessions", "issue": "environment uses fail-open labeling: 'SIMULATED_ADB' if agent.adb.simulated else 'REAL_DEVICE'. If the heartbeat has no adb info or no simulated flag (older agent, missing field), the session is labeled REAL_DEVICE. Suggest REAL_DEVICE only when simulated is explicitly False, otherwise UNKNOWN/null (the schema already allows null)."},
+      {"endpoint": "agent AgentApp (adb.simulated)", "issue": "simulated is detected only when the adb version string contains 'SIMULATED'. Any other fake or wrapper adb counts as REAL_DEVICE. Emulators also count as REAL_DEVICE (the schema description says 'physical/emulator'), but the UI tag reads 'REAL DEVICE'. Suggest marking emulator serials (emulator-*) separately or noting this in ACCEPTANCE_RESULTS."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Recorder (TR)", "issues": ["recorder-simulated-banner text is hardcoded English ('SIMULATED ADB — not a real device recording.') and does not change in TR mode. The capture-limitation strings from the agent are also English only."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_units.py", "/app/backend/tests/test_api_integration.py", "/app/backend/tests/test_external_api.py", "/app/backend/tests/test_live_agent_external.py", "/app/recorder-agent/target/surefire-reports", "/app/recorder-agent/tools/fake-adb/run-simulated-e2e.sh"],
+  "action_items": [
+    "Optional: make environment fail-closed (REAL_DEVICE only when adb.simulated === false is explicitly reported).",
+    "Optional: i18n the simulated banner string (TR)."
+  ],
+  "critical_code_review_comments": [
+    "Companion EventSerializer.SENSITIVE uses substring match: 'pin' matches 'spinner'/'shipping'/'opinion' and 'sms' and 'token' are also broad, so it over-masks. OTP regex \\d{4,8} masks any 4-8 digit plain input such as amounts ('1500'), so INPUT_TEXT values for amount fields in banking flows will be masked. This is safe for privacy but will surprise users during acceptance; document it in CAPABILITIES.md.",
+    "RecorderAccessibilityService does not recycle event.source nodes (needed on API < 33) and eventCount++ on a @Volatile field is not atomic. Both are minor.",
+    "run-simulated-e2e.sh uses set -e: if a step fails mid-run, the trap kills the agent but the remaining sessions are not deleted and the token is not rotated. Put cleanup and rotation in the trap.",
+    "/tmp/agent-sim.properties keeps the agent token in plain text after the script finishes (the token is rotated, so the risk is low)."
+  ],
+  "updated_files": ["/app/test_reports/iteration_2.json"],
+  "success_rate": {"backend": "100% (30 self-contained + 16 external + 2 live + 21 JUnit)", "frontend": "100%"},
+  "seed_data_creation": "Temporary: 1 SIMULATED UI session and 1 DEMO session, both deleted. Cleanup done: agent killed, /tmp/fake-adb flags removed, agent token rotated, sessions list empty.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "To start the simulated agent for UI: export FAKE_ADB_STATE=/tmp/fake-adb; get a token via POST /api/settings/agent-token, write /tmp/agent-sim.properties (backend.url, agent.token, adb.path=/app/recorder-agent/tools/fake-adb/fake-adb.sh, agent.name), then run java -jar target/recorder-agent.jar <props> with PATH=/root/tools/jdk11/bin. Select device FAKE-0001 on /devices (device-select-button-FAKE-0001) before Start Recording is enabled. Without AMTS_AGENT_RUNNING=1, test_live_agent_external.py is skipped at module level, so pytest collects 46 tests, not 48. No real-device testing was possible or done."
+}
