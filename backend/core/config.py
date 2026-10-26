@@ -15,6 +15,8 @@ SCHEMA_VERSION = "1.0"
 AGENT_TIMEOUT_S = int(os.environ.get("AGENT_TIMEOUT_S", "10"))
 START_TIMEOUT_S = int(os.environ.get("START_TIMEOUT_S", "20"))
 STOP_TIMEOUT_S = int(os.environ.get("STOP_TIMEOUT_S", "20"))
+REPLAY_TIMEOUT_S = int(os.environ.get("REPLAY_TIMEOUT_S", "180"))
+REPLAY_ALLOWED_PACKAGES = set(os.environ.get("REPLAY_ALLOWED_PACKAGES", "com.amts.sampleapp").split(","))
 MONITOR_INTERVAL_S = float(os.environ.get("MONITOR_INTERVAL_S", "3"))
 
 DEFAULT_SETTINGS = {

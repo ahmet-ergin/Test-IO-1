@@ -11,6 +11,7 @@ import {
 import { useApp } from "@/context/AppContext";
 import { http, errMsg, fmtDuration, fmtTime, downloadExport } from "@/lib/api";
 import { PageHeader, Panel, StatusBadge, DemoBadge, EmptyState, Tag } from "@/components/common";
+import { ReplayButton } from "@/components/ReplayControls";
 
 export default function Sessions() {
   const { t, refreshStatus } = useApp();
@@ -56,6 +57,7 @@ export default function Sessions() {
                   <TableCell className="text-xs text-muted-foreground">{fmtTime(s.created_at)}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
+                      {s.saved && !s.demo && <ReplayButton sessionId={s.id} compact testId={`session-replay-${s.id}`} />}
                       <Button size="icon" variant="ghost" title={t("nav_steps")} data-testid={`session-open-${s.id}`} onClick={() => nav(`/recorded-steps/${s.id}`)}><ListChecks className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title={t("btn_export")} data-testid={`session-export-${s.id}`} onClick={() => downloadExport(s.id).catch((e) => toast.error(errMsg(e)))}><Download className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title={t("btn_delete")} data-testid={`session-delete-${s.id}`} onClick={() => setToDelete(s.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>

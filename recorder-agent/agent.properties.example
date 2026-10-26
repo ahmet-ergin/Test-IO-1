@@ -5,3 +5,8 @@ adb.path=adb
 heartbeat.ms=1000
 # agent.name=my-macbook
 # companion.package=com.amts.companion
+# Replay (Appium 2 + UiAutomator2 must already be installed and running locally)
+# appium.url=http://127.0.0.1:4723
+# replay.find.timeout.ms=10000
+# appium.session.timeout.ms=120000
+# replay.allowed.packages=com.amts.sampleapp

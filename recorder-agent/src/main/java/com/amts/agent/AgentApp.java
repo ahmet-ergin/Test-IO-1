@@ -3,6 +3,8 @@ package com.amts.agent;
 import com.amts.agent.adb.AdbClient;
 import com.amts.agent.config.AgentConfig;
 import com.amts.agent.device.DeviceDiscovery;
+import com.amts.agent.replay.AppiumClient;
+import com.amts.agent.replay.ReplayRunner;
 import com.amts.agent.session.RecordingSession;
 import com.amts.agent.transport.BackendClient;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -10,6 +12,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,6 +34,8 @@ public class AgentApp {
     private final ExecutorService commands = Executors.newSingleThreadExecutor();
     private final String agentId;
     private volatile RecordingSession session;
+    private final ReplayRunner replay;
+    private volatile boolean replayActive;
 
     AgentApp(AgentConfig cfg) throws Exception {
         this.cfg = cfg;
@@ -38,6 +43,9 @@ public class AgentApp {
         this.backend = new BackendClient(cfg.backendUrl, cfg.agentToken);
         this.discovery = new DeviceDiscovery(adb, cfg.companionPackage);
         this.agentId = loadAgentId();
+        AppiumClient appium = new AppiumClient(cfg.appiumUrl, Duration.ofSeconds(5),
+                Duration.ofMillis(cfg.appiumSessionTimeoutMs), Duration.ofSeconds(30));
+        this.replay = new ReplayRunner(appium, backend, agentId, cfg.replayAllowedPackages, cfg.replayFindTimeoutMs, 500);
     }
 
     public static void main(String[] args) throws Exception {
@@ -115,6 +123,7 @@ public class AgentApp {
             switch (type) {
                 case "START_SESSION":
                     if (session != null) throw new IllegalStateException("Agent already recording " + session.id);
+                    if (replayActive) throw new IllegalStateException("A replay is running; recording blocked");
                     RecordingSession s = new RecordingSession(sid, c.path("payload"), adb, backend, cfg.companionPackage);
                     session = s;
                     try {
@@ -135,6 +144,18 @@ public class AgentApp {
                     RecordingSession cur = current(sid);
                     session = null;
                     cur.stop();
+                    break;
+                case "START_REPLAY":
+                    if (session != null) {
+                        replay.reject(c.path("payload"), "RECORDING_ACTIVE", "A recording is active on this agent; replay blocked.");
+                        throw new IllegalStateException("Recording active; replay rejected");
+                    }
+                    replayActive = true;
+                    try {
+                        replay.run(c.path("payload"));
+                    } finally {
+                        replayActive = false;
+                    }
                     break;
                 case "REFRESH_DEVICES":
                     discovery.invalidate();

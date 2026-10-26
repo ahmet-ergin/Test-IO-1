@@ -14,6 +14,8 @@ import { http, errMsg, artifactUrl, downloadExport } from "@/lib/api";
 import { PageHeader, Panel, Tag, Confidence, EmptyState, DemoBadge } from "@/components/common";
 import { EventFeed, elementLabel } from "@/components/EventFeed";
 import { StepInspector } from "@/components/StepInspector";
+import { ReplayButton } from "@/components/ReplayControls";
+import { ReplayHistory } from "@/components/ReplayHistory";
 
 const StepRow = ({ step, event, screen, index, total, onInspect, onMove, t }) => {
   const loc = step.locators?.[step.selectedLocatorIndex];
@@ -101,6 +103,7 @@ export default function RecordedSteps() {
           <SelectContent>{sessions.map((s) => <SelectItem key={s.id} value={s.id} data-testid={`steps-session-option-${s.id}`}>{s.demo ? "[DEMO] " : ""}{s.name}</SelectItem>)}</SelectContent>
         </Select>
         {sessionId && <Button variant="outline" size="sm" data-testid="steps-export-button" onClick={() => downloadExport(sessionId).catch((e) => toast.error(errMsg(e)))}><Download className="mr-2 h-4 w-4" />{t("btn_export")}</Button>}
+        {sessionId && session?.saved && !session?.demo && <ReplayButton sessionId={sessionId} testId="steps-replay-button" />}
       </PageHeader>
       {session?.demo && <div className="mb-3 flex items-center gap-2 text-sm text-amber-500"><DemoBadge /> {t("demo_note")}</div>}
       {!sessionId ? <Panel><EmptyState text={t("steps_select_session")} testId="steps-no-session" /></Panel> : (
@@ -108,6 +111,7 @@ export default function RecordedSteps() {
           <TabsList>
             <TabsTrigger value="steps" data-testid="steps-tab-edited">{t("steps_tab_steps")} · {steps.length}</TabsTrigger>
             <TabsTrigger value="raw" data-testid="steps-tab-raw">{t("steps_tab_raw")} · {events.length}</TabsTrigger>
+            <TabsTrigger value="replays" data-testid="steps-tab-replays">{t("replay_history")}</TabsTrigger>
           </TabsList>
           <TabsContent value="steps">
             <Panel testId="steps-timeline">
@@ -119,6 +123,7 @@ export default function RecordedSteps() {
             </Panel>
           </TabsContent>
           <TabsContent value="raw"><Panel testId="steps-raw-log"><EventFeed events={events} testId="raw-event-log" /></Panel></TabsContent>
+          <TabsContent value="replays"><Panel testId="steps-replays-panel"><ReplayHistory sessionId={sessionId} /></Panel></TabsContent>
         </Tabs>
       )}
       <StepInspector step={inspect} event={inspectEvent} screen={scById[inspectEvent?.screenId]} onClose={() => setInspect(null)}

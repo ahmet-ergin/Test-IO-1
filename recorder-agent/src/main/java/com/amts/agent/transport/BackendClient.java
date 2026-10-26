@@ -55,6 +55,10 @@ public class BackendClient {
         return post("/sessions/" + sessionId + "/state", body);
     }
 
+    public JsonNode replayStatus(String runId, Map<String, Object> body) throws IOException, InterruptedException {
+        return post("/replays/" + runId + "/status", body);
+    }
+
     public JsonNode events(String sessionId, List<Map<String, Object>> events) throws IOException, InterruptedException {
         return post("/sessions/" + sessionId + "/events", Map.of("events", events));
     }

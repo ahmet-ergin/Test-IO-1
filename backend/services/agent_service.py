@@ -77,6 +77,8 @@ async def reconcile(now: datetime = None):
                                          "status": {"$in": [x.value for x in ACTIVE_STATES]}}, {"_id": 0}).to_list(100):
             await ss.transition(s["id"], S.FAILED, "system", error={
                 "code": "AGENT_DISCONNECTED", "message": "Local Recorder Agent stopped sending heartbeats."})
+    from services.replay_service import reconcile_replays
+    await reconcile_replays(now, stale_agents)
     start_cut = (now - timedelta(seconds=START_TIMEOUT_S)).isoformat()
     for s in await db.sessions.find({"status": S.STARTING.value, "created_at": {"$lt": start_cut}}, {"_id": 0}).to_list(100):
         await ss.transition(s["id"], S.FAILED, "system", error={

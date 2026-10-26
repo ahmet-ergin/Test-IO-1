@@ -104,7 +104,7 @@ async def create_step_for_event(ev: dict):
 
 async def delete_session_cascade(session_id: str):
     await db.events.delete_many({"sessionId": session_id})
-    for coll in (db.steps, db.screens, db.commands):
+    for coll in (db.steps, db.screens, db.commands, db.replays):
         await coll.delete_many({"session_id": session_id})
     await delete_session_artifacts(session_id)
     await db.sessions.delete_one({"id": session_id})

@@ -61,6 +61,14 @@ const tr = {
   err_generic: "Beklenmeyen bir hata oluştu.", err_validation: "Geçersiz değer: aralık 500–60000 ms, saklama 1–3650 gün.",
   rec_simulated_banner: "SİMÜLE ADB — gerçek cihaz kaydı değildir.",
   col_audit_action: "İşlem", col_audit_target: "Hedef",
+  status_QUEUED: "SIRADA", status_RUNNING: "ÇALIŞIYOR", status_PASSED: "BAŞARILI",
+  btn_replay: "Tekrar Oynat", btn_replay_start: "Oynatmayı Başlat", replay_title: "Tekrar Oynatma",
+  replay_confirm_title: "Kayıt cihazda tekrar oynatılsın mı?",
+  replay_confirm_text: "Yerel ajan bir Appium oturumu açar ve kayıtlı TAP adımlarını aşağıdaki cihazda gerçekten tıklar.",
+  replay_device: "Cihaz", replay_app: "Uygulama", replay_activity: "Aktivite", replay_steps: "Adımlar",
+  replay_started: "Başlangıç", replay_checking: "Uyumlu cihaz kontrol ediliyor…", replay_loading: "Yükleniyor…",
+  replay_queued_note: "Komut sırada — yerel ajanın almasını bekliyor.", replay_history: "Oynatmalar",
+  replay_none: "Bu oturum için henüz oynatma yok.",
 };
 
 const en = {
@@ -125,6 +133,14 @@ const en = {
   err_generic: "An unexpected error occurred.", err_validation: "Invalid value: interval 500–60000 ms, retention 1–3650 days.",
   rec_simulated_banner: "SIMULATED ADB — not a real device recording.",
   col_audit_action: "Action", col_audit_target: "Target",
+  status_QUEUED: "QUEUED", status_RUNNING: "RUNNING", status_PASSED: "PASSED",
+  btn_replay: "Replay", btn_replay_start: "Start Replay", replay_title: "Replay Run",
+  replay_confirm_title: "Replay this recording on the device?",
+  replay_confirm_text: "The local agent will open an Appium session and really tap the recorded TAP steps on the device below.",
+  replay_device: "Device", replay_app: "Application", replay_activity: "Activity", replay_steps: "Steps",
+  replay_started: "Started", replay_checking: "Checking for a compatible device…", replay_loading: "Loading…",
+  replay_queued_note: "Command queued — waiting for the local agent to pick it up.", replay_history: "Replays",
+  replay_none: "No replays for this session yet.",
 };
 
 export const DICTS = { tr, en };

@@ -18,6 +18,17 @@ ACTIVE_STATES = {RecordingStatus.STARTING, RecordingStatus.RECORDING,
 STEP_EXCLUDED_ACTIONS = {"SCREEN_CHANGE"}
 
 
+class ReplayStatus(str, Enum):
+    QUEUED = "QUEUED"
+    RUNNING = "RUNNING"
+    PASSED = "PASSED"
+    FAILED = "FAILED"
+
+
+REPLAY_ACTIVE = {ReplayStatus.QUEUED, ReplayStatus.RUNNING}
+REPLAY_SUPPORTED_ACTIONS = {"TAP"}
+
+
 class StartSessionRequest(BaseModel):
     deviceSerial: str
     name: Optional[str] = None
@@ -96,3 +107,19 @@ class AgentSessionState(BaseModel):
 
 class EventBatch(BaseModel):
     events: List[dict]
+
+
+class ReplayStepResult(BaseModel):
+    stepId: str
+    status: str
+    error: Optional[dict] = None
+    locator: Optional[dict] = None
+    attempts: List[dict] = []
+    durationMs: Optional[int] = None
+
+
+class ReplayStatusUpdate(BaseModel):
+    agentId: str
+    status: ReplayStatus
+    error: Optional[dict] = None
+    steps: List[ReplayStepResult] = []

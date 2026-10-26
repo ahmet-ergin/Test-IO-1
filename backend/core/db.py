@@ -16,3 +16,5 @@ async def ensure_indexes():
     await db.devices.create_index([("agent_id", 1), ("serial", 1)], unique=True)
     await db.commands.create_index([("agent_id", 1), ("status", 1)])
     await db.audit_logs.create_index("timestamp")
+    await db.replays.create_index("id", unique=True)
+    await db.replays.create_index([("device.serial", 1), ("status", 1)])

@@ -13,6 +13,7 @@ from services.agent_service import require_connected_agent, queue_command
 from services.settings_service import get_settings
 from services.export_service import build_export
 from services.audit import audit
+from services.replay_service import active_replay_for_device
 
 router = APIRouter(tags=["sessions"])
 
@@ -27,6 +28,8 @@ async def start_session(body: StartSessionRequest):
         raise AppError("DEVICE_NOT_READY", f"Device state is '{dev.get('state')}'. Authorize USB debugging.", 409)
     if await ss.active_session_for_device(body.deviceSerial):
         raise AppError("SESSION_ALREADY_ACTIVE", "A recording is already active on this device.", 409)
+    if await active_replay_for_device(body.deviceSerial):
+        raise AppError("REPLAY_ACTIVE", "A replay is running on this device; wait for it to finish.", 409)
     settings = await get_settings()
     sid = str(uuid.uuid4())
     ts = ss.now_iso()

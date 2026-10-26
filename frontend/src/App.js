@@ -10,6 +10,7 @@ import Sessions from "@/pages/Sessions";
 import RecordedSteps from "@/pages/RecordedSteps";
 import Settings from "@/pages/Settings";
 import Planned from "@/pages/Planned";
+import ReplayRun from "@/pages/ReplayRun";
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="/sessions" element={<Sessions />} />
             <Route path="/recorded-steps" element={<RecordedSteps />} />
             <Route path="/recorded-steps/:sessionId" element={<RecordedSteps />} />
+            <Route path="/replays/:runId" element={<ReplayRun />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/locator-inspector" element={<Planned module="locator" />} />
             <Route path="/ai-analysis" element={<Planned module="ai" />} />

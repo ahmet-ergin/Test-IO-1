@@ -7,7 +7,7 @@ from starlette.middleware.cors import CORSMiddleware
 from core.config import CORS_ORIGINS, MONITOR_INTERVAL_S, SCHEMA_VERSION
 from core.db import client, ensure_indexes
 from core.errors import AppError, app_error_handler
-from api import agent_routes, session_routes, ui_routes, demo_routes
+from api import agent_routes, session_routes, ui_routes, demo_routes, replay_routes
 from services.agent_service import reconcile
 from services.export_service import session_schema
 
@@ -49,7 +49,7 @@ async def get_schema():
     return session_schema()
 
 
-for r in (agent_routes.router, session_routes.router, ui_routes.router, demo_routes.router):
+for r in (agent_routes.router, session_routes.router, ui_routes.router, demo_routes.router, replay_routes.router):
     api.include_router(r)
 app.include_router(api)
 

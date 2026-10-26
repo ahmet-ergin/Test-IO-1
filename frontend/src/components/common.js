@@ -9,6 +9,9 @@ const STATUS_STYLES = {
   STOPPING: "bg-sky-500/10 text-sky-500 border-sky-500/30",
   COMPLETED: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30",
   FAILED: "bg-red-600/15 text-red-500 border-red-600/40",
+  QUEUED: "bg-muted text-muted-foreground border-border",
+  RUNNING: "bg-sky-500/10 text-sky-500 border-sky-500/30",
+  PASSED: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30",
 };
 
 export const StatusBadge = ({ status, testId = "status-badge" }) => {
@@ -17,6 +20,7 @@ export const StatusBadge = ({ status, testId = "status-badge" }) => {
     <span data-testid={testId}
       className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 font-mono text-[11px] font-semibold tracking-wider ${STATUS_STYLES[status] || STATUS_STYLES.IDLE}`}>
       {status === "RECORDING" && <span className="h-1.5 w-1.5 rounded-full bg-red-500 rec-pulse" />}
+      {status === "RUNNING" && <span className="h-1.5 w-1.5 rounded-full bg-sky-500 rec-pulse" />}
       {t(`status_${status}`)}
     </span>
   );

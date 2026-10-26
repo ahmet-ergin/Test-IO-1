@@ -14,6 +14,10 @@ public final class AgentConfig {
     public final long heartbeatMs;
     public final String agentName;
     public final String companionPackage;
+    public final String appiumUrl;
+    public final long replayFindTimeoutMs;
+    public final long appiumSessionTimeoutMs;
+    public final java.util.Set<String> replayAllowedPackages;
 
     private AgentConfig(Properties p) {
         this.backendUrl = trimSlash(required(p, "backend.url", "AMTS_BACKEND_URL"));
@@ -22,6 +26,11 @@ public final class AgentConfig {
         this.heartbeatMs = Long.parseLong(value(p, "heartbeat.ms", "AMTS_HEARTBEAT_MS", "1000"));
         this.agentName = value(p, "agent.name", "AMTS_AGENT_NAME", hostName());
         this.companionPackage = value(p, "companion.package", "AMTS_COMPANION_PACKAGE", "com.amts.companion");
+        this.appiumUrl = trimSlash(value(p, "appium.url", "AMTS_APPIUM_URL", "http://127.0.0.1:4723"));
+        this.replayFindTimeoutMs = Long.parseLong(value(p, "replay.find.timeout.ms", "AMTS_REPLAY_FIND_TIMEOUT_MS", "10000"));
+        this.appiumSessionTimeoutMs = Long.parseLong(value(p, "appium.session.timeout.ms", "AMTS_APPIUM_SESSION_TIMEOUT_MS", "120000"));
+        this.replayAllowedPackages = java.util.Set.of(value(p, "replay.allowed.packages", "AMTS_REPLAY_ALLOWED_PACKAGES",
+                "com.amts.sampleapp").split("\\s*,\\s*"));
     }
 
     public static AgentConfig load(Path file) throws IOException {

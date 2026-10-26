@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from core.db import db, NO_ID
 from core.errors import AppError
-from models.domain import (HeartbeatRequest, CommandResult, AgentSessionState, EventBatch,
+from models.domain import (HeartbeatRequest, CommandResult, AgentSessionState, EventBatch, ReplayStatusUpdate,
                            RecordingStatus as S)
 from services.agent_service import require_agent_token, pull_commands, handle_device_changes
 from services.settings_service import get_settings
@@ -14,6 +14,7 @@ from services.masking import mask_event, mask_hierarchy_xml
 from services.artifacts import store_artifact
 from services.export_service import validate_event
 from services.audit import audit
+from services import replay_service as rs
 
 logger = logging.getLogger("amts.agent")
 router = APIRouter(prefix="/agent", dependencies=[Depends(require_agent_token)], tags=["agent"])
@@ -50,6 +51,10 @@ async def command_result(command_id: str, body: CommandResult):
                                                                    "completed_at": ss.now_iso()}})
     if not r.matched_count:
         raise AppError("COMMAND_NOT_FOUND", "Command not found.", 404)
+    if body.status == "FAILED":
+        run = await db.replays.find_one({"command_id": command_id, "status": {"$in": ["QUEUED", "RUNNING"]}}, NO_ID)
+        if run:
+            await rs.fail_run(run, "AGENT_COMMAND_FAILED", f"Agent could not execute replay: {(body.error or '')[:300]}")
     return {"ok": True}
 
 
@@ -130,3 +135,8 @@ async def ingest_events(session_id: str, body: EventBatch):
     if rejected:
         logger.warning("Rejected %d events for %s: %s", len(rejected), session_id, rejected[:3])
     return {"accepted": accepted, "rejected": rejected}
+
+
+@router.post("/replays/{run_id}/status")
+async def replay_status(run_id: str, body: ReplayStatusUpdate):
+    return await rs.apply_agent_update(run_id, body)
