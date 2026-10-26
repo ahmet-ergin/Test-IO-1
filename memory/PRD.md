@@ -17,6 +17,13 @@ backend/ (FastAPI: api, core, models, services, schemas, tests) · frontend/ (Re
 - Kotlin companion source (not compiled here — no Android SDK).
 - UI: Dashboard, Devices, Recorder (live SSE feed, screenshot overlay), Sessions, Recorded Steps (inspector drawer, raw log tab), Settings, Planned pages.
 
+## Iteration 2 (2026-10-26) — Phase 1 hardening for real-device validation
+- Companion + new non-sensitive sample app (`android-companion/sample-app`) build as debug APKs (Gradle 8.7/AGP 8.2.2); setup screen shows enabled/connected/events; companion-side masking of keyword/OTP fields; SERVICE_CONNECTED event
+- Agent: verified on real JDK 11 (class v55); `--diagnose [--watch N]`; restricted getevent handled (no root); unsupported capabilities reported per session
+- Provenance: session `environment` REAL_DEVICE / EMULATOR / SIMULATED_ADB / DEMO / null (fail-closed)
+- Docs: LOCAL_VALIDATION (Mac), REAL_DEVICE_ACCEPTANCE, ACCEPTANCE_RESULTS (NOT RUN), CAPABILITIES, TEST_REPORT
+- Real-device acceptance still NOT RUN
+
 ## Not yet done / backlog
 - P0: Real-device acceptance test on user's Mac (docs/setup/LOCAL_VALIDATION.md); build companion APK
 - P1: Phase 2 Locator Engine (on-device validation, scoring) — only after approval

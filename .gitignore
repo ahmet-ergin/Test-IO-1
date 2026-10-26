@@ -97,3 +97,5 @@ android-companion/local.properties
 credentials.json
 *.key
 .credentials
+android-companion/*/build/
+android-companion/build/

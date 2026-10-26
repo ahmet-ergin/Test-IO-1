@@ -1,7 +1,0 @@
-com.amts.sampleapp.sample-app-pngs-0 /app/android-companion/sample-app/build/generated/res/pngs/debug
-com.amts.sampleapp.sample-app-resValues-1 /app/android-companion/sample-app/build/generated/res/resValues/debug
-com.amts.sampleapp.sample-app-packageDebugResources-2 /app/android-companion/sample-app/build/intermediates/incremental/debug/packageDebugResources/merged.dir
-com.amts.sampleapp.sample-app-packageDebugResources-3 /app/android-companion/sample-app/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
-com.amts.sampleapp.sample-app-merged_res-4 /app/android-companion/sample-app/build/intermediates/merged_res/debug
-com.amts.sampleapp.sample-app-debug-5 /app/android-companion/sample-app/src/debug/res
-com.amts.sampleapp.sample-app-main-6 /app/android-companion/sample-app/src/main/res

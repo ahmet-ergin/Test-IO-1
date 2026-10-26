@@ -5,7 +5,7 @@ Enterprise mobile test-automation recorder. **Phase 1 = Android Recorder MVP.** 
 ## Status
 | Component | Status |
 |---|---|
-| Backend (FastAPI, `backend/`) | Implemented · 30 self-contained tests pass + 18 environment-dependent tests (see `docs/TEST_REPORT.md`) |
+| Backend (FastAPI, `backend/`) | Implemented · 30 self-contained tests pass + 25 environment-dependent tests (see `docs/TEST_REPORT.md`) |
 | Web UI (React, `frontend/`) | Implemented · TR (default) / EN · dark / light |
 | Recorder Agent (Java 11 + Maven, `recorder-agent/`) | Implemented · built and tested on **real JDK 11** (21 JUnit tests) · `--diagnose` device checker · simulated-adb end-to-end passes |
 | Android companion (Kotlin, `android-companion/app`) | **APK builds** (debug) · setup screen with enabled/connected status · **not yet installed on a device** |

@@ -21,10 +21,11 @@ Build-environment note: Google ships `aapt2` for Linux only as x86-64. On this a
 | `backend/tests/test_api_integration.py` | 10 | MongoDB (isolated temp DB) | pass |
 | `backend/tests/test_external_api.py` (written by the testing agent) | 16 | running backend at REACT_APP_BACKEND_URL, **no** agent connected | passed in iteration 1 |
 | `backend/tests/test_live_agent_external.py` (written by the testing agent) | 2 | running backend + simulated agent, `AMTS_AGENT_RUNNING=1`, `-n 0` | passed in iteration 1 |
+| `backend/tests/test_provenance_external.py` (written by the testing agent, iteration 3) | 7 | running backend at REACT_APP_BACKEND_URL | pass |
 | `recorder-agent` JUnit | 21 | nothing | pass (JDK 11 and 17) |
 | `tools/fake-adb/run-simulated-e2e.sh` | 3 scenarios | backend + **SIMULATED adb** | pass: normal (TAP HYBRID, masked PIN, BACK), restricted getevent (TAP falls back to ACCESSIBILITY 0.85, limitation reported, no BACK), disconnect → FAILED |
 
-**About the "47 vs 29" numbers:** the old README listed 29 = the self-contained suites (`test_units.py` + `test_api_integration.py`). The earlier completion message's 47 added the 18 environment-dependent tests the testing agent wrote (16 + 2). This iteration adds 1 test (simulated-environment labeling), so it is now **30 self-contained + 18 environment-dependent = 48** backend tests, plus 21 Java tests.
+**About the "47 vs 29" numbers:** the old README listed 29 = the self-contained suites (`test_units.py` + `test_api_integration.py`). The earlier completion message's 47 added the 18 environment-dependent tests the testing agent wrote (16 + 2). This iteration added 1 self-contained test (provenance labeling) and the testing agent added 7 external provenance tests, so the total is now **30 self-contained + 25 environment-dependent = 55** backend tests, plus 21 Java tests.
 
 Provenance labeling is fail-closed: `REAL_DEVICE` only when the agent explicitly reports non-simulated adb and the device is not an emulator (`EMULATOR`). A missing flag gives `null`.
 

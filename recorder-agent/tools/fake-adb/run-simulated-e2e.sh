@@ -22,6 +22,6 @@ rec "SIMULATED normal"
 touch "$FAKE_ADB_STATE/getevent_denied"; rec "SIMULATED getevent denied"; rm "$FAKE_ADB_STATE/getevent_denied"
 SID=$(curl -s -X POST "$API/api/sessions" -H 'Content-Type: application/json' -d '{"deviceSerial":"FAKE-0001","name":"SIMULATED disconnect"}' | python3 -c 'import sys,json;print(json.load(sys.stdin)["id"])')
 sleep 5; touch "$FAKE_ADB_STATE/disconnected"; sleep 4
-curl -s "$API/api/sessions/$SID" | python3 -c 'import sys,json;s=json.load(sys.stdin);print("SESSION disconnect",s["status"],s["error"])'
+curl -s "$API/api/sessions/$SID" | python3 -c 'import sys,json;s=json.load(sys.stdin);print("SESSION disconnect",s["status"],s["environment"],s["error"])'
 curl -s -X DELETE "$API/api/sessions/$SID" > /dev/null; rm -f "$FAKE_ADB_STATE/disconnected"
 curl -s -X POST "$API/api/settings/agent-token" > /dev/null   # rotate so the test token is not reused

@@ -1,0 +1,20 @@
+{
+  "summary": "Iteration 3: re-checked the two minor fixes from iteration 2. Everything ran with SIMULATED adb only; nothing here was verified on a real device. (1) Fail-closed provenance: new external pytest test_provenance_external.py passed 7/7 against the public URL. Each case used a fake agent heartbeat, then created a session, had the fake agent report RECORDING, stopped it, had the agent report COMPLETED, exported it, checked the export against the schema, deleted it and confirmed a 404. Results: simulated=true gives SIMULATED_ADB (also with an emulator serial); simulated missing or null gives environment null; simulated=false with an emulator-* serial gives EMULATOR; simulated=false with model sdk_gphone* gives EMULATOR; simulated=false on a non-emulator device gives REAL_DEVICE. All exports are schema-valid. The schema enum includes EMULATOR, and the backend/schemas copy is byte-identical (cmp). (2) Backend suites: test_units + test_api_integration 30 passed. (3) run-simulated-e2e.sh: scenarios 1 and 2 COMPLETED SIMULATED_ADB with valid exports. Scenario 3 FAILED 'Android device disconnected during recording.' The script does not print environment for scenario 3, so I re-ran the disconnect flow by hand with the agent jar: environment SIMULATED_ADB, export valid. (4) UI: started a recording from the Recorder with FAKE-0001. recorder-simulated-banner reads 'SİMÜLE ADB — gerçek cihaz kaydı değildir.' in TR and 'SIMULATED ADB — not a real device recording.' after switching to EN; the banner stays after stop. Sessions page shows session-emulator-{id} (EMULATOR, blue) and session-simulated-{id}, with 0 session-real tags. Cleanup done: agent jar killed, all test sessions deleted, token rotated, /tmp/fake-adb and the properties file removed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Recorder (TR)", "issues": ["Capture Limitations text 'Not supported in Phase 1: ...' is still English in TR mode (cosmetic).", "Recorder subtitle says 'Record manual interactions on a real device' / 'Gerçek cihazda...' even when the session is SIMULATED (cosmetic; the banner clarifies it)."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_provenance_external.py", "/app/test_reports/pytest/provenance.xml"],
+  "action_items": ["Optional: print environment for scenario 3 in run-simulated-e2e.sh (line 25) so the 'all 3 scenarios SIMULATED_ADB' claim is visible in the script output.", "Optional: translate the Phase 1 limitation text in TR."],
+  "critical_code_review_comments": ["environment_for is correctly fail-closed (only an explicit simulated=False can produce REAL_DEVICE/EMULATOR).", "Sessions stuck in STOPPING (agent never acks) cannot be deleted through the UI API until the agent reports COMPLETED or FAILED; by design, but worth noting for orphaned sessions."],
+  "updated_files": ["/app/backend/tests/test_provenance_external.py (new)"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "Fake agents TEST_agent_* and devices TEST*/emulator-5554/emulator-5556 stay in the DB (no delete API). All sessions were deleted.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "test_provenance_external.py needs REACT_APP_BACKEND_URL exported. It sends fake heartbeats, so it briefly takes over the 'connected agent' (most recent heartbeat). Do not run it while a real or simulated agent recording is active."
+}
