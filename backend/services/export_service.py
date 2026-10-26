@@ -43,6 +43,7 @@ def _step_out(st: dict) -> dict:
     idx = st.get("selectedLocatorIndex")
     sel = locs[idx] if idx is not None and idx < len(locs) else None
     return {"stepId": st["id"], "order": st["order"], "eventId": st["event_id"], "name": st["name"],
+            "action": st.get("action"),
             "description": st.get("description", ""), "verification": st.get("verification", False),
             "edited": st.get("edited", False), "selectedLocator": sel,
             "alternativeLocators": [c for i, c in enumerate(locs) if i != idx]}

@@ -17,7 +17,7 @@ const Metric = ({ icon: Icon, label, value, testId }) => (
 const MODULES = [
   ["Mobile Interaction Recorder (Android)", true], ["Locator Engine — basic extraction", true],
   ["Locator Engine — scoring & on-device validation", false], ["AI Screen & Action Understanding", false],
-  ["Framework-Aware Code Generator (Java/Gauge)", false], ["Jira / Zephyr Scale Integration", false],
+  ["Framework-Aware Code Generator (Java/Gauge)", true], ["Jira / Zephyr Scale Integration", false],
   ["iOS Recorder", false],
 ];
 

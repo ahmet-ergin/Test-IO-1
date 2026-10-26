@@ -8,11 +8,12 @@ import { StatusBadge } from "@/components/common";
 const PHASE1 = [
   ["/", "nav_dashboard", LayoutDashboard, "dashboard"], ["/devices", "nav_devices", Smartphone, "devices"],
   ["/recorder", "nav_recorder", Video, "recorder"], ["/sessions", "nav_sessions", History, "sessions"],
-  ["/recorded-steps", "nav_steps", ListChecks, "recorded-steps"], ["/settings", "nav_settings", Sliders, "settings"],
+  ["/recorded-steps", "nav_steps", ListChecks, "recorded-steps"], ["/code-generator", "nav_codegen", Code2, "code-generator"],
+  ["/settings", "nav_settings", Sliders, "settings"],
 ];
 const PLANNED = [
   ["/locator-inspector", "nav_locator", Crosshair, "locator-inspector"], ["/ai-analysis", "nav_ai", Sparkles, "ai-analysis"],
-  ["/code-generator", "nav_codegen", Code2, "code-generator"], ["/jira-integration", "nav_jira", Share2, "jira-integration"],
+  ["/jira-integration", "nav_jira", Share2, "jira-integration"],
 ];
 
 const NavItem = ({ to, label, Icon, id, planned }) => (

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.amts</groupId>
+  <artifactId>codegen-validation-classpath</artifactId>
+  <version>1.0</version>
+  <packaging>pom</packaging>
+  <properties><selenium.version>4.34.0</selenium.version></properties>
+  <dependencies>
+    <dependency><groupId>io.appium</groupId><artifactId>java-client</artifactId><version>9.5.0</version></dependency>
+    <dependency><groupId>org.seleniumhq.selenium</groupId><artifactId>selenium-api</artifactId><version>${selenium.version}</version></dependency>
+    <dependency><groupId>org.seleniumhq.selenium</groupId><artifactId>selenium-remote-driver</artifactId><version>${selenium.version}</version></dependency>
+    <dependency><groupId>org.seleniumhq.selenium</groupId><artifactId>selenium-support</artifactId><version>${selenium.version}</version></dependency>
+    <dependency><groupId>com.thoughtworks.gauge</groupId><artifactId>gauge-java</artifactId><version>0.11.1</version></dependency>
+  </dependencies>
+</project>

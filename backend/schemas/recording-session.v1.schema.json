@@ -137,6 +137,7 @@
         "order": {"type": "integer"},
         "eventId": {"type": "string"},
         "name": {"type": "string"},
+        "action": {"enum": ["TAP", "LONG_PRESS", "INPUT_TEXT", "SWIPE", "SCROLL", "BACK", "SCREEN_CHANGE", "KEYBOARD_ACTION", "WAIT", "ASSERTION", null]},
         "description": {"type": "string"},
         "verification": {"type": "boolean"},
         "edited": {"type": "boolean"},

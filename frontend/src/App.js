@@ -11,6 +11,7 @@ import RecordedSteps from "@/pages/RecordedSteps";
 import Settings from "@/pages/Settings";
 import Planned from "@/pages/Planned";
 import ReplayRun from "@/pages/ReplayRun";
+import CodeGenerator from "@/pages/CodeGenerator";
 
 export default function App() {
   return (
@@ -28,7 +29,7 @@ export default function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/locator-inspector" element={<Planned module="locator" />} />
             <Route path="/ai-analysis" element={<Planned module="ai" />} />
-            <Route path="/code-generator" element={<Planned module="codegen" />} />
+            <Route path="/code-generator" element={<CodeGenerator />} />
             <Route path="/jira-integration" element={<Planned module="jira" />} />
           </Route>
         </Routes>
