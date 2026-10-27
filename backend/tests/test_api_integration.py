@@ -13,6 +13,8 @@ def _ev(sid, seq, action="TAP", **kw):
 
 
 def test_no_agent_message(client):
+    from core.db import db
+    client.portal.call(db.agents.delete_many, {})  # other modules may have registered agents in the shared test DB
     r = client.get("/api/devices").json()
     assert r["agentConnected"] is False and r["message"] == "Local Recorder Agent is not connected."
     r = client.post("/api/sessions", json={"deviceSerial": "x"})

@@ -37,7 +37,7 @@ def test_pom_three_layers_structure_verified(client, token):
     assert "public class Deneme3AndroidPage extends BaseModel implements IDeneme3Page" in an
     assert '@FindBy(id = "com.amts.sampleapp:id/transferButton")\n    private IMobileElement transferButton;' in an
     assert "mobileApp.longPressOnElement(longPressButton);" in an and "mobileApp.swipeUp();" in an
-    assert "pinInput.clear();" in an and "pinInput.sendKeys(key);" in an and "mobileApp.navigateToBack();" in an
+    assert "pinInput.clear();" in an and "pinInput.sendKeys(value);" in an and "mobileApp.navigateToBack();" in an
     assert 'deneme3Page.typePinInput(System.getenv(key));' in st
     assert "# language: tr" in feat and 'Ve pinInput alanına "AMTS_PIN_INPUT" anahtarlı gizli test verisini yazar' in feat
     assert "Ve geri tuşuna basar" in feat and "Ve ekranı aşağı kaydırır" in feat
@@ -115,7 +115,9 @@ def test_pom_validation_catches_broken_layers(client, token):
 def test_pom_invalid_config(client, token):
     sid = _session(client, token, _rich)
     for bad in ({"stepClassPattern": "Steps"}, {"pageBaseClass": "Model"}, {"actionTemplates": {"TAP": "{foo}.click();"}},
-                {"appExpression": "a.b()"}, {"locatorTemplates": {"XPATH": "xpath = x"}}):
+                {"appExpression": "a.b()"}, {"locatorTemplates": {"XPATH": "xpath = x"}},
+                {"pageModelArgs": ") public class X {"}, {"actionTemplates": {"TAP": "{element}.click()"}},
+                {"interfacePattern": "{name}", "stepClassPattern": "{name}"}, {"elementType": "com.example.framework.BaseModel"}):
         assert client.post(f"{POM}/plan", json={"sessionId": sid, "config": bad}).status_code == 422, bad
     gauge = client.post("/api/codegen/generate", json={"sessionId": sid}).json()
     assert gauge["validation"]["status"] == "VERIFIED"

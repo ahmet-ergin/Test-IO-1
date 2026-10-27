@@ -68,7 +68,7 @@ def build_steps(doc: dict, cfg: PomConfig):
         label = _label(ev, sensitive, n)
         issues, selected, alternatives, element, direction = [], None, [], None, None
         template_key = action
-        if action in ELEMENT_ACTIONS or action not in ("SCROLL", "BACK"):
+        if action not in ("SCROLL", "BACK"):
             selected, alternatives = _choose(st, cfg, issues)
         if action == "SCROLL":
             direction = _scroll_direction(ev)

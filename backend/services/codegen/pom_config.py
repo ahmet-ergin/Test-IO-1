@@ -93,6 +93,23 @@ class PomConfig(BaseModel):
                 e.append(f"{f} tam nitelikli sınıf adı olmalı (ör. com.example.framework.Xyz).")
         if self.pageFieldAnnotation and not is_fqcn(self.pageFieldAnnotation):
             e.append("pageFieldAnnotation boş ya da tam nitelikli ad olmalı.")
+        lit = r'(?:"(?:[^"\\]|\\.)*"|-?\d+|true|false)'
+        if self.pageModelArgs.strip() and not re.fullmatch(rf"\s*(?:{lit}|\w+\s*=\s*{lit}(?:\s*,\s*\w+\s*=\s*{lit})*)\s*", self.pageModelArgs):
+            e.append("pageModelArgs tek bir sabit (\"X\") veya ad = sabit çiftleri (name = \"X\", order = 1) olmalı.")
+        for k, v in self.locatorTemplates.model_dump().items():
+            if v and not re.fullmatch(rf"\s*\w+\s*=\s*(?:\{{value\}}|{lit})(?:\s*,\s*\w+\s*=\s*(?:\{{value\}}|{lit}))*\s*", v):
+                e.append(f"Locator şablonu {k} 'ad = {{value}}' (ve isteğe bağlı ad = sabit) biçiminde olmalı.")
+        for k, v in self.actionTemplates.model_dump().items():
+            bad_lines = [ln for ln in v.split("\n") if ln.strip() and not ln.rstrip().endswith((";", "{", "}"))]
+            if bad_lines:
+                e.append(f"Aksiyon şablonu {k}: her satır ';', '{{' veya '}}' ile bitmeli.")
+        cls = [v.replace("{name}", "X") for v in (self.stepClassPattern, self.interfacePattern, self.androidClassPattern)]
+        if len(set(cls)) < 3:
+            e.append("Step, Interface ve Android sınıf adı şablonları birbirinden farklı sınıf adları üretmeli.")
+        fw = [self.stepBaseClass, self.pageBaseClass, self.pageModelAnnotation, self.stepAnnotation, self.locatorAnnotation,
+              self.elementType] + ([self.pageFieldAnnotation] if self.pageFieldAnnotation else [])
+        if len(set(fw)) < len(fw):
+            e.append("Framework sınıf/anotasyon adları birbirinden farklı olmalı.")
         if not re.fullmatch(r"[A-Za-z_]\w*(\(\))?", self.appExpression):
             e.append("appExpression bir alan adı (mobileApp) veya parametresiz metot çağrısı (getApp()) olmalı.")
         for k, v in self.locatorTemplates.model_dump().items():

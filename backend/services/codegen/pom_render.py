@@ -21,8 +21,7 @@ def _header(plan, what):
 
 
 def _sig(m):
-    p = m["param"]
-    return f"void {m['name']}({'String ' + p['name'] if p else ''})"
+    return f"void {m['name']}({'String value' if m['param'] else ''})"
 
 
 def render_interface(plan, cfg: PomConfig):
@@ -48,7 +47,7 @@ def _action_body(m, cfg):
         msg = f"AMTS: {m['action']} işlemi bu profilde desteklenmiyor veya şablonu tanımlı değil; mevcut framework metodunuzla elle uygulayın."
         return [f"throw new UnsupportedOperationException({java_str(msg, cfg.asciiOnly)});"]
     code = m["template"].replace("{element}", m["element"] or "").replace("{app}", cfg.appExpression)
-    code = code.replace("{value}", m["param"]["name"] if m["param"] else "")
+    code = code.replace("{value}", "value" if m["param"] else "")
     return [ln.strip() for ln in code.split("\n") if ln.strip()]
 
 
