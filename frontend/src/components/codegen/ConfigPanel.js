@@ -5,13 +5,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-const get = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k]), o);
-const setIn = (o, path, v) => {
+export const get = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k]), o);
+export const setIn = (o, path, v) => {
   const [k, ...rest] = path.split(".");
   return { ...o, [k]: rest.length ? setIn(o[k] || {}, rest.join("."), v) : v };
 };
 
-const Field = ({ label, hint, children }) => (
+export const Field = ({ label, hint, children }) => (
   <div className="space-y-1">
     <Label className="text-xs text-muted-foreground">{label}</Label>
     {children}
@@ -19,14 +19,14 @@ const Field = ({ label, hint, children }) => (
   </div>
 );
 
-const Text = ({ cfg, onChange, path, label, hint, placeholder }) => (
+export const Text = ({ cfg, onChange, path, label, hint, placeholder }) => (
   <Field label={label} hint={hint}>
     <Input data-testid={`cg-${path.replace(/\./g, "-")}`} className="h-8 font-mono text-xs" value={get(cfg, path) ?? ""}
       placeholder={placeholder} onChange={(e) => onChange(setIn(cfg, path, e.target.value))} />
   </Field>
 );
 
-const Choice = ({ cfg, onChange, path, label, options, hint }) => (
+export const Choice = ({ cfg, onChange, path, label, options, hint }) => (
   <Field label={label} hint={hint}>
     <Select value={String(get(cfg, path))} onValueChange={(v) => onChange(setIn(cfg, path, v))}>
       <SelectTrigger data-testid={`cg-${path.replace(/\./g, "-")}`} className="h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -35,14 +35,14 @@ const Choice = ({ cfg, onChange, path, label, options, hint }) => (
   </Field>
 );
 
-const Toggle = ({ cfg, onChange, path, label }) => (
+export const Toggle = ({ cfg, onChange, path, label }) => (
   <label className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
     {label}
     <Switch data-testid={`cg-${path.replace(/\./g, "-")}`} checked={!!get(cfg, path)} onCheckedChange={(v) => onChange(setIn(cfg, path, v))} />
   </label>
 );
 
-const Section = ({ value, title, children }) => (
+export const Section = ({ value, title, children }) => (
   <AccordionItem value={value} className="border-border">
     <AccordionTrigger data-testid={`cg-section-${value}`} className="py-2.5 text-xs font-semibold uppercase tracking-wider hover:no-underline">{title}</AccordionTrigger>
     <AccordionContent className="space-y-3 pb-4">{children}</AccordionContent>

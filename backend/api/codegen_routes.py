@@ -12,6 +12,10 @@ from services.codegen import service as cg
 from services.codegen.javautil import words
 from services.codegen.validate import validate_files
 from services.sessions_service import get_session
+from services.codegen.pom_config import PomConfig, resolve_pom
+from services.codegen.pom_planner import build_pom_plan
+from services.codegen.pom_render import generate_files as pom_files
+from services.codegen.pom_validate import validate_pom
 
 router = APIRouter(prefix="/codegen", tags=["codegen"])
 
@@ -31,6 +35,15 @@ class CodeFile(BaseModel):
 class FilesRequest(BaseModel):
     sessionId: str
     config: CodegenConfig = Field(default_factory=CodegenConfig)
+    files: List[CodeFile]
+
+
+class PomPlanRequest(BaseModel):
+    sessionId: str
+    config: PomConfig = Field(default_factory=PomConfig)
+
+
+class PomFilesRequest(PomPlanRequest):
     files: List[CodeFile]
 
 
@@ -84,6 +97,51 @@ async def zip_export(body: FilesRequest):
     data = cg.build_zip(files, v, s.get("name") or "")
     await audit("CODEGEN_ZIP_EXPORTED", "session", body.sessionId, {"status": v["status"], "files": len(files)})
     name = "amts-" + ("-".join(w.lower() for w in words(s.get("name") or "")) or "session") + "-gauge.zip"
+    return Response(data, media_type="application/zip", headers={
+        "Content-Disposition": f"attachment; filename=\"{name}\"; filename*=UTF-8''{quote(name)}",
+        "X-AMTS-Validation": v["status"], "Access-Control-Expose-Headers": "X-AMTS-Validation, Content-Disposition"})
+
+
+@router.get("/pom/defaults")
+async def pom_defaults():
+    return PomConfig().model_dump()
+
+
+@router.post("/pom/plan")
+async def pom_plan(body: PomPlanRequest):
+    return await build_pom_plan(body.sessionId, body.config)
+
+
+@router.post("/pom/generate")
+async def pom_generate(body: PomPlanRequest):
+    plan = await build_pom_plan(body.sessionId, body.config)
+    rc = PomConfig(**plan["config"])
+    files = pom_files(plan, rc)
+    v = await validate_pom(files, rc, plan["classes"])
+    await audit("CODEGEN_GENERATED", "session", body.sessionId, {"profile": "CUCUMBER_POM", "status": v["status"]})
+    return {"plan": plan, "files": files, "validation": v}
+
+
+async def _pom_validated(body: PomFilesRequest):
+    s = await get_session(body.sessionId)
+    files = [f.model_dump() for f in body.files]
+    cg.check_files(files)
+    rc = resolve_pom(body.config, s.get("name") or "Recorded")
+    return s, files, await validate_pom(files, rc, rc.names())
+
+
+@router.post("/pom/validate")
+async def pom_validate(body: PomFilesRequest):
+    _, _, v = await _pom_validated(body)
+    return v
+
+
+@router.post("/pom/zip")
+async def pom_zip(body: PomFilesRequest):
+    s, files, v = await _pom_validated(body)
+    data = cg.build_zip(files, v, s.get("name") or "")
+    await audit("CODEGEN_ZIP_EXPORTED", "session", body.sessionId, {"profile": "CUCUMBER_POM", "status": v["status"]})
+    name = "amts-" + ("-".join(w.lower() for w in words(s.get("name") or "")) or "session") + "-cucumber-pom.zip"
     return Response(data, media_type="application/zip", headers={
         "Content-Disposition": f"attachment; filename=\"{name}\"; filename*=UTF-8''{quote(name)}",
         "X-AMTS-Validation": v["status"], "Access-Control-Expose-Headers": "X-AMTS-Validation, Content-Disposition"})

@@ -30,6 +30,24 @@ def const(s: str) -> str:
     return "_".join(w.upper() for w in words(s))
 
 
+def jwords(s: str) -> list:
+    """Like words() but also splits camelCase (transferButton -> transfer, Button)."""
+    return [p for w in words(s) for p in re.findall(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+", w)]
+
+
+def jpascal(s: str) -> str:
+    return "".join(w[:1].upper() + w[1:].lower() for w in jwords(s))
+
+
+def jcamel(s: str) -> str:
+    p = jpascal(s)
+    return p[:1].lower() + p[1:]
+
+
+def jconst(s: str) -> str:
+    return "_".join(w.upper() for w in jwords(s))
+
+
 def java_str(s: str, ascii_only: bool = False) -> str:
     """Java string literal. Never emits \\u escapes for quote/backslash/CR/LF (the lexer pre-processes \\u)."""
     out = []

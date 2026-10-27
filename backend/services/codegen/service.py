@@ -9,7 +9,7 @@ from services.codegen import render
 from services.codegen.validate import validate_files
 
 MAX_FILES, MAX_BYTES = 20, 1_000_000
-_SAFE_PATH = re.compile(r"^[A-Za-z0-9_\-]+(/[A-Za-z0-9_\-.]+)*\.(java|spec|md)$")
+_SAFE_PATH = re.compile(r"^[A-Za-z0-9_\-]+(/[A-Za-z0-9_\-.]+)*\.(java|spec|md|feature)$")
 
 
 async def generate(session_id: str, cfg: CodegenConfig) -> dict:
@@ -42,7 +42,8 @@ def check_files(files: list):
 
 def build_zip(files: list, validation: dict, session_name: str) -> bytes:
     buf = io.BytesIO()
-    status_tr = {"VERIFIED": "DOĞRULANDI", "FAILED": "BAŞARISIZ", "NOT_VERIFIED": "DOĞRULANMADI"}[validation["status"]]
+    status_tr = {"VERIFIED": "DOĞRULANDI", "FAILED": "BAŞARISIZ", "NOT_VERIFIED": "DOĞRULANMADI",
+                 "STRUCTURE_VERIFIED": "YAPISAL OLARAK DOĞRULANDI (framework derlemesi doğrulanmadı)"}[validation["status"]]
     report = [f"# AMTS doğrulama raporu — {session_name}", "", f"Durum: **{status_tr}** ({validation['status']})",
               f"İçerik özeti (sha256): `{validation['contentHash']}`", "",
               "Bu rapor ZIP içindeki dosyaların tam olarak bu hâli için sunucuda üretildi.", ""]

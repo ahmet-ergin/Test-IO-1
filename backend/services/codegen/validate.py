@@ -127,62 +127,83 @@ async def _run(*args, timeout=90):
     return p.returncode, out.decode(errors="replace")
 
 
-async def check_javac(files, cfg):
-    global _javac_version
-    javac = shutil.which("javac")
-    jars = sorted(LIB_DIR.glob("*.jar")) if LIB_DIR.exists() else []
-    if not javac or not jars:
-        return {"id": "javac", "status": "SKIPPED", "summary": "Bu sunucuda javac veya doğrulama kütüphaneleri yok; derleme doğrulanmadı.", "details": []}
-    if _javac_version is None:
-        _, v = await _run(javac, "-version", timeout=20)
-        m = re.search(r"(\d+)", v)
-        _javac_version = int(m.group(1)) if m else 11
-    release = cfg.javaVersion if int(cfg.javaVersion) <= _javac_version else str(_javac_version)
-    note = "" if release == cfg.javaVersion else f" (Java {cfg.javaVersion} seçildi; sunucudaki javac en fazla --release {release} destekliyor)"
-    java_files = [f for f in files if f["path"].endswith(".java")]
-    path_errors = []
+def path_errors(java_files) -> list:
+    errs = []
     for f in java_files:
         pkg = (_PKG.search(f["content"]) or [None, ""])[1]
         cls = (_CLS.search(f["content"]) or [None, None])[1]
         expected = "/".join([*pkg.split("."), f"{cls}.java"]) if pkg else f"{cls}.java"
         if not cls or not f["path"].endswith("/" + expected) and f["path"] != expected:
-            path_errors.append(f"{f['path']}: package/sınıf adı ({pkg or '-'}.{cls or '?'}) dosya yoluyla eşleşmiyor; beklenen yol sonu '{expected}'.")
-    if path_errors:
-        return {"id": "javac", "status": "FAIL", "summary": "Dosya yolu ile package/sınıf adı uyumsuz; gerçek projede derlenmez.", "details": path_errors}
-    defined = set()
+            errs.append(f"{f['path']}: package/sınıf adı ({pkg or '-'}.{cls or '?'}) dosya yoluyla eşleşmiyor; beklenen yol sonu '{expected}'.")
+    return errs
+
+
+def defined_classes(java_files) -> set:
+    out = set()
+    for f in java_files:
+        pkg = (_PKG.search(f["content"]) or [None, ""])[1]
+        cls = (_CLS.search(f["content"]) or [None, Path(f["path"]).stem])[1]
+        out.add(f"{pkg}.{cls}" if pkg else cls)
+    return out
+
+
+async def compile_java(java_files, java_version: str, stubs: dict) -> dict:
+    """Runs javac on the given files plus stubs. Returns {available, code, lines, release, note}."""
+    global _javac_version
+    javac = shutil.which("javac")
+    jars = sorted(LIB_DIR.glob("*.jar")) if LIB_DIR.exists() else []
+    if not javac or not jars:
+        return {"available": False}
+    if _javac_version is None:
+        _, v = await _run(javac, "-version", timeout=20)
+        m = re.search(r"(\d+)", v)
+        _javac_version = int(m.group(1)) if m else 11
+    release = java_version if int(java_version) <= _javac_version else str(_javac_version)
+    note = "" if release == java_version else f" (Java {java_version} seçildi; sunucudaki javac en fazla --release {release} destekliyor)"
     with tempfile.TemporaryDirectory(prefix="amts-codegen-") as tmp:
         root = Path(tmp)
         srcs = []
-        for i, f in enumerate(java_files):
-            pkg = (_PKG.search(f["content"]) or [None, ""])[1]
-            cls = (_CLS.search(f["content"]) or [None, Path(f["path"]).stem])[1]
-            defined.add(f"{pkg}.{cls}" if pkg else cls)
+        for f in java_files:
             p = root / "src" / f["path"]
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text(f["content"], encoding="utf-8")
             srcs.append((p, f["path"]))
-        stubs = _stubs(cfg, defined)
+        stub_paths = []
         for fq, code in stubs.items():
             p = root / "stubs" / (fq.replace(".", "/") + ".java")
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text(code, encoding="utf-8")
-        all_src = [str(p) for p, _ in srcs] + [str(root / "stubs" / (fq.replace(".", "/") + ".java")) for fq in stubs]
-        if not all_src:
-            return {"id": "javac", "status": "FAIL", "summary": "Derlenecek Java dosyası yok.", "details": []}
+            stub_paths.append(str(p))
         cp = ":".join(str(j) for j in jars)
         async with _javac_slots:
             code, out = await _run(javac, "--release", release, "-encoding", "UTF-8", "-proc:none", "-nowarn",
-                                   "-d", str(root / "out"), "-cp", cp, *all_src)
+                                   "-Xlint:-options", "-d", str(root / "out"), "-cp", cp, *[str(p) for p, _ in srcs], *stub_paths)
         for p, orig in srcs:
             out = out.replace(str(p), orig)
         out = out.replace(str(root) + "/", "")
+    lines = [ln for ln in out.splitlines() if ln.strip() and not ln.startswith("Note:") and not ln.startswith("warning:")
+             and "warning: [options]" not in ln and not re.match(r"^\d+ warnings?$", ln)]
+    return {"available": True, "code": code, "lines": lines, "release": release, "note": note}
+
+
+async def check_javac(files, cfg):
+    java_files = [f for f in files if f["path"].endswith(".java")]
+    perr = path_errors(java_files)
+    if perr:
+        return {"id": "javac", "status": "FAIL", "summary": "Dosya yolu ile package/sınıf adı uyumsuz; gerçek projede derlenmez.", "details": perr}
+    if not java_files:
+        return {"id": "javac", "status": "FAIL", "summary": "Derlenecek Java dosyası yok.", "details": []}
+    stubs = _stubs(cfg, defined_classes(java_files))
+    r = await compile_java(java_files, cfg.javaVersion, stubs)
+    if not r["available"]:
+        return {"id": "javac", "status": "SKIPPED", "summary": "Bu sunucuda javac veya doğrulama kütüphaneleri yok; derleme doğrulanmadı.", "details": []}
+    code, release = r["code"], r["release"]
     stub_note = f" Framework sınıfları için derleme amaçlı stub kullanıldı: {', '.join(stubs)}." if stubs else ""
-    lines = [ln for ln in out.splitlines() if ln.strip() and not ln.startswith("Note:")]
     status = ("PASS" if release == cfg.javaVersion else "PARTIAL") if code == 0 else "FAIL"
     return {"id": "javac", "status": status,
-            "summary": f"javac --release {release} ile {len(java_files)} dosya derlendi ({TOOLCHAIN}).{note}{stub_note}"
+            "summary": f"javac --release {release} ile {len(java_files)} dosya derlendi ({TOOLCHAIN}).{r['note']}{stub_note}"
             if code == 0 else f"Derleme hatası (javac --release {release}).{stub_note}",
-            "details": lines[:40] if code != 0 else [], "stubs": list(stubs)}
+            "details": r["lines"][:40] if code != 0 else [], "stubs": list(stubs)}
 
 
 async def validate_files(files, cfg) -> dict:
