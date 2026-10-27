@@ -1,0 +1,33 @@
+{
+  "summary": "Frontend-only test of the Cucumber + POM profile on /code-generator, run with Playwright against the public URL. A route guard aborted non-GET replay and heartbeat requests. No sessions or settings were changed, and the three amts.codegen.* localStorage keys were cleared at the end (confirmed null). PASSING: profile select, subtitle change and cg-pom-local-note. The DENEME-3 plan row shows @FindBy(id = \"com.amts.sampleapp:id/transferButton\") with status HAZIR. Generate gives 5 file tabs (feature, steps, contract, android, readme) and STRUCTURE_VERIFIED; framework_compile is NOT_VERIFIED and java_syntax is PASS. The copy buttons show the 'Panoya kopyalanamadı' toast because the headless clipboard is blocked. Clearing the TAP template shows cg-plan-stale and the STALE banner; after regenerating, the row is DESTEKLENMİYOR, the unsupported alert appears, the android file contains UnsupportedOperationException, and the status stays STRUCTURE_VERIFIED. cg-config-reset restores '{element}.click();' and clears storage. An invalid pageModelArgs gives a 422 error toast with no 'Value error' prefix; after reload the inline cg-plan-error appears and cg-plan-error-reset restores the defaults. In the edit flow, removing implements gives dirty + STALE, then Doğrula gives FAILED with structure and javac details, then cg-file-reset returns to STRUCTURE_VERIFIED. The elementFieldModifier select lists 4 options including '(paket erişimi)'; it generates a field with no modifier and stays STRUCTURE_VERIFIED. ZIP amts-deneme-3-cucumber-pom.zip downloads with a STRUCTURE_VERIFIED toast. The profile is remembered after reload. The Gauge regression gives VERIFIED and cg-driver-mode is visible. FOUND: 1 critical crash, which I fixed and re-verified, and 1 minor bug (Üyeleri kopyala shows on the readme tab).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "CodeGenerator profile switch", "issue": "FIXED BY TESTER. Switching the profile from CUCUMBER_POM to GAUGE in the same page session crashed the app with 'Cannot read properties of undefined (reading mode)'. RCA: changeProfile only called setProfile. For one render, the Gauge ConfigPanel got the old POM cfg (no driver/helper keys) before the effect ran setCfg(null), so cfg.driver.mode threw. Fix: changeProfile now clears cfg, plan, files, original, validation and planStale before setProfile. Verified that POM -> GAUGE -> POM works with no page error.", "selector": "[data-testid='cg-profile-select']", "priority": "CRITICAL"},
+      {"component": "CodePreview cg-copy-members", "issue": "The 'Üyeleri kopyala' button shows on the readme tab (AMTS_INTEGRATION.md); the spec says Java tabs only. RCA: membersOf() looks for the markers anywhere, and the README text produced by pom_render.py line 119 contains both `// <amts:members>` and `// </amts:members>` inline. Clicking it copies junk. Fix: only compute members when f.path ends with .java, or match the markers as whole lines.", "selector": "[data-testid='cg-copy-members']", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Kod Üreteci header (Gauge profile)", "issues": ["The header controls change position between profiles. With the shorter Gauge subtitle, the pickers sit inline on the right; with the longer POM subtitle, they wrap below. The layout shifts when switching."]},
+      {"screen": "Gauge ConfigPanel", "issues": ["Placeholders still use non-fictional-looking names (com.bank.steps.BaseSteps, com.bank.core.DriverManager); the POM defaults use com.example.*. Consider aligning them."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Review the tester's fix in CodeGenerator.js changeProfile (the crash when switching POM -> GAUGE) and keep it.",
+    "Only show cg-copy-members for .java files: in CodePreview, compute members only when f.path ends with .java, or anchor the markers to whole lines.",
+    "Optional: late defaults responses can race on fast profile switching. Add a cancel/ignore flag in the profile defaults useEffect so an old profile's response can't overwrite cfg."
+  ],
+  "critical_code_review_comments": [
+    "CodeGenerator.js profile useEffect: there is no cleanup or ignore flag for the GET defaults request, so a fast switch A->B->A can apply the stale defaults of B.",
+    "membersOf() matches the markers anywhere in the content; it should check the role or the line anchor.",
+    "resetCfg while files exist leaves the old plan visible with the stale banner. That is acceptable, but the plan rows reflect the old config until a review is run."
+  ],
+  "updated_files": ["/app/frontend/src/pages/CodeGenerator.js"],
+  "success_rate": {"backend": "not tested (frontend only)", "frontend": "~92% (1 critical crash fixed, 1 minor bug open)"},
+  "seed_data_creation": "None",
+  "test_credentials": "None required",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Never POST */replays or send heartbeats; use a Playwright route guard. The DENEME-3 session id is 976206fa-7e7d-4da1-b8c8-399f2d24f955. The POM accordion opens general, framework and actions by default, so check aria-expanded before clicking cg-section-actions. cg-plan-error renders inline only when plan is null: after a failed review with an existing plan only the toast shows, so reload to see the inline error. The headless clipboard is blocked, so copy toasts show 'Panoya kopyalanamadı'. Clear the localStorage keys amts.codegen.profile, amts.codegen.config.v1 and amts.codegen.pom.config.v1 afterwards."
+}

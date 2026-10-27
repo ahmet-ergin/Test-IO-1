@@ -21,7 +21,7 @@ export const CodePreview = ({ files, original, active, onSelect, onEdit, onReset
   const f = files[active];
   if (!f) return null;
   const dirty = (i) => files[i].content !== original[i]?.content;
-  const members = membersOf(f.content);
+  const members = f.path.endsWith(".java") ? membersOf(f.content) : null;
   return (
     <div data-testid="cg-preview" className="overflow-hidden rounded border border-border">
       <div className="flex flex-wrap border-b border-border bg-muted/30">

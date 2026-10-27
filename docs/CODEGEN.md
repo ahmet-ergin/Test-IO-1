@@ -36,3 +36,29 @@ Java 11/17/21, java-client 8.x/9.x/10.x, step paketi/sınıfı, kaynak & spec kl
 - Doğrulama yalnızca java-client 9.5.0'a karşı yapılır; 8.x/10.x seçimi bilgi amaçlıdır.
 - Üretim ortamında JDK yoksa doğrulama "DOĞRULANMADI" döner.
 - Kod Üreteci ekranı yalnızca Türkçe.
+
+---
+
+# Profil 2 — Cucumber + Page Object Model (yapılandırılabilir)
+
+Kurum içi framework adları paylaşılamadığı için tüm adlar ayarlanabilir; varsayılanlar kurgusaldır (`com.example.*`). Ayarlar yalnızca tarayıcıda (`amts.codegen.pom.config.v1`) saklanır. Gauge profili değişmedi.
+
+API: `GET /api/codegen/pom/defaults`, `POST /api/codegen/pom/{plan|generate|validate|zip}` (gövde: `{sessionId, config, files?}`).
+
+## Çıktılar
+- `src/test/resources/features/<oturum>.feature`: `# language: tr`, `Diyelim ki` / `Ve` adımları (opsiyonel).
+- Step Definition (`stepsPackage`): `extends <stepBaseClass>`, `@<stepAnnotation>("...")`, yalnızca `<pageField>.metot()` çağrıları; page alanı `new` ile oluşturulmaz.
+- Page Interface (`contractsPackage`): `@<pageModelAnnotation>`, yalnızca metot imzaları.
+- Android Page (`androidPackage`): `extends <pageBaseClass> implements <Interface>`, `@<locatorAnnotation>(<şablon>) <elementType> alan;`, aksiyonlar şablonlardan.
+- Her Java dosyasında `// <amts:members>` … `// </amts:members>`: mevcut sınıfa eklemek için "Üyeleri kopyala".
+
+## Şablonlar
+- Locator: `RESOURCE_ID: id = {value}`, `ACCESSIBILITY_ID: accessibilityId = {value}`, `XPATH: xpath = {value}`, `UIAUTOMATOR: (boş)`. Boş = strateji desteklenmiyor. Seçili locator ifade edilemiyorsa öncelik RESOURCE_ID > ACCESSIBILITY_ID > XPATH > UIAUTOMATOR ile ilk desteklenen alternatif kullanılır ve uyarı verilir.
+- Aksiyon (`{element}`, `{app}`, `{value}`): TAP, INPUT_TEXT, LONG_PRESS, SCROLL_DOWN/UP/LEFT/RIGHT, BACK. Boş/eksik şablon veya bilinmeyen aksiyon olursa adım işaretlenir ve page metodu `UnsupportedOperationException` fırlatır; metot uydurulmaz.
+- Hassas değerler: feature'da anahtar (`AMTS_PIN_INPUT`), step'te `secretValueTemplate` (varsayılan `System.getenv({key})`).
+
+## Doğrulama
+- `structure`: paket/import, `@PageModel`, extends/implements, her `@FindBy` bir element alanında, interface metotlarının hepsi uygulanmış, step sınıfında locator/element/app/driver ve `new` yok.
+- `feature_match`: her feature adımı tam bir Cucumber ifadesiyle eşleşir; `step_collisions`: girilen mevcut ifadelerle belirsizlik/çakışma yok.
+- `java_syntax`: `javac --release 8|11`, kurum içi sınıflar yerine yerel stub'larla (şablonlardan türetilen metot adları, `Object...` parametreler). Cucumber `io.cucumber.java.en.And` gerçek jar'dan gelir (cucumber-java 7.20.1).
+- `framework_compile`: her zaman **NOT_VERIFIED**. En iyi genel durum **STRUCTURE_VERIFIED**'dır, hiçbir zaman VERIFIED değildir.

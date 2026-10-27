@@ -61,7 +61,7 @@ export const ConfigPanel = ({ cfg, onChange, derived }) => {
           <Choice {...p} path="javaVersion" label="Java sürümü" options={[["11", "Java 11"], ["17", "Java 17"], ["21", "Java 21"]]} />
           <Choice {...p} path="appiumClientVersion" label="Appium java-client" options={[["8.x", "8.x"], ["9.x", "9.x"], ["10.x", "10.x"]]} />
         </div>
-        <Text {...p} path="stepsPackage" label="Step paket adı" placeholder="com.bank.mobile.steps" />
+        <Text {...p} path="stepsPackage" label="Step paket adı" placeholder="com.example.mobile.steps" />
         <div className="grid grid-cols-2 gap-3">
           <Text {...p} path="stepClassName" label="Step sınıf adı" placeholder={derived?.stepClassName || "otomatik"} />
           <Text {...p} path="sourceRoot" label="Java kaynak klasörü" />
@@ -83,12 +83,12 @@ export const ConfigPanel = ({ cfg, onChange, derived }) => {
       </Section>
       <Section value="driver" title="Driver erişimi">
         <Choice {...p} path="driver.mode" label="Driver nasıl alınır?" options={[["STATIC_METHOD", "Statik metot (ör. DriverManager.getDriver())"], ["INHERITED_METHOD", "Temel sınıftan miras alınan metot"]]} />
-        {cfg.driver.mode === "STATIC_METHOD" && <Text {...p} path="driver.className" label="Driver sınıfı (tam ad)" placeholder="com.bank.core.DriverManager" />}
+        {cfg.driver.mode === "STATIC_METHOD" && <Text {...p} path="driver.className" label="Driver sınıfı (tam ad)" placeholder="com.example.framework.DriverManager" />}
         <div className="grid grid-cols-2 gap-3">
           <Text {...p} path="driver.methodName" label="Metot adı" />
           <Choice {...p} path="driver.driverType" label="Dönüş tipi" options={[["AppiumDriver", "AppiumDriver"], ["AndroidDriver", "AndroidDriver"], ["WebDriver", "WebDriver"]]} />
         </div>
-        <Text {...p} path="baseClass" label={`Temel step sınıfı (tam ad)${needsBase ? " — gerekli" : " — opsiyonel"}`} placeholder="com.bank.steps.BaseSteps" />
+        <Text {...p} path="baseClass" label={`Temel step sınıfı (tam ad)${needsBase ? " — gerekli" : " — opsiyonel"}`} placeholder="com.example.steps.BaseSteps" />
         <p className="text-[11px] text-muted-foreground">Üretilen kod yeni Appium oturumu açmaz; yalnızca bu erişim ile mevcut driver'ı kullanır.</p>
       </Section>
       <Section value="helper" title="Ortak aksiyon metotları">

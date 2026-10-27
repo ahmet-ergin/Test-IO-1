@@ -75,10 +75,12 @@ export default function CodeGenerator() {
 
   useEffect(() => {
     setCfg(null); setPlan(null); setPlanError(null); setFiles([]); setOriginal([]); setValidation(null); setStale(false); setTab("review");
-    http.get(`${P.base}/defaults`).then((r) => setCfg(merge(r.data, loadSaved(P.storage)))).catch((e) => toast.error(errMsg(e)));
+    let live = true;
+    http.get(`${P.base}/defaults`).then((r) => { if (live) setCfg(merge(r.data, loadSaved(P.storage))); }).catch((e) => toast.error(errMsg(e)));
+    return () => { live = false; };
   }, [P.base, P.storage]);
 
-  const changeProfile = (p) => { localStorage.setItem(PROFILE_KEY, p); setProfile(p); };
+  const changeProfile = (p) => { if (p === profile) return; localStorage.setItem(PROFILE_KEY, p); setCfg(null); setPlan(null); setPlanStale(false); setFiles([]); setOriginal([]); setValidation(null); setProfile(p); };
   const updateCfg = (c) => { setCfg(c); setPlanStale(true); if (files.length) setStale(true); localStorage.setItem(P.storage, JSON.stringify(c)); };
   const resetCfg = async () => {
     try {

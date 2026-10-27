@@ -40,6 +40,14 @@ backend/ (FastAPI: api, core, models, services, schemas, tests) · frontend/ (Re
 - Tests: backend isolated 43 passed (7 codegen) + external 20 codegen + 7 replay; iterations 6 & 7 passed
 - Docs: docs/CODEGEN.md
 
+## Iteration 5 (2026-10-27) — Cucumber + POM profile (configurable, fictional defaults)
+- User cannot share company code, so every framework name, annotation, element type, locator/action template and method verb is configurable; defaults are com.example.*; config stays in the browser (amts.codegen.pom.config.v1)
+- Backend: services/codegen/pom_{config,planner,render,validate}.py + /api/codegen/pom/{defaults,plan,generate,validate,zip}; validate.py refactored (compile_java/path_errors), Gauge output unchanged; cucumber-java 7.20.1 + apiguardian added to backend/codegen_lib
+- Outputs: Turkish .feature, Step Definition, Page Interface, Android Page with // <amts:members> markers; unsupported steps throw; secrets via key template
+- Validation: structure, feature_match, step_collisions, java_syntax (javac with stubs), framework_compile always NOT_VERIFIED, best status STRUCTURE_VERIFIED
+- Frontend: profile select (Gauge / Cucumber+POM), PomConfigPanel, copy-file / copy-members buttons
+- Tests: backend 49 isolated + 46 external passed; frontend iteration_8 (crash on profile switch fixed by the tester; copy-members on readme fixed; defaults race guarded)
+
 ## Not yet done / backlog
 - P0: Real-device acceptance test on user's Mac (docs/setup/LOCAL_VALIDATION.md); build companion APK
 - P0: User runs physical-device replay acceptance (REPLAY_MVP.md)
