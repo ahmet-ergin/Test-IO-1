@@ -63,6 +63,13 @@ backend/ (FastAPI: api, core, models, services, schemas, tests) · frontend/ (Re
 - Tests: backend 59 isolated + 72 external + Java 28; iterations 10–12 (frontend 100% in iteration 11)
 - WAITING for user approval before the next phase
 
+## Iteration 8 (2026-10-30) — Stage 3 final verification (13–14)
+- DENEME-3 + MobilDeniz: 4 files generated, STRUCTURE_VERIFIED; framework_compile NOT_VERIFIED (no corporate deps)
+- Regression: backend isolated 59/59, external codegen/replay 89/89, Java agent 28/28, UI tour iteration_13 21/21
+- Not run on purpose: test_external_api / test_provenance_external / test_live_agent_external (they post heartbeats/sessions to the live preview DB the user's real agent uses)
+- Fix: AMTS_INTEGRATION.md now shows multiline action templates on one line
+- WAITING for user approval
+
 ## Not yet done / backlog
 - P0: Real-device acceptance test on user's Mac (docs/setup/LOCAL_VALIDATION.md); build companion APK
 - P0: User runs physical-device replay acceptance (REPLAY_MVP.md)

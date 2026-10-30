@@ -1,0 +1,20 @@
+{
+  "summary": "Stage 3 final read-only UI tour (frontend only, preview URL, 1920x1080). Kod Üreteci: MobilDeniz - Cucumber POM profile selected via cg-profile-opt-POM-MOBILDENIZ, DENEME-3 auto-selected (1 adım · TAP×1), cg-plan-locator-1 = @FindBy(locator = \"id=com.amts.sampleapp:id/transferButton\", timeout = 2). Generate produced 5 tabs (feature/steps/contract/android/readme) with all expected strings present and consistent (feature 'Diyelim ki TRANSFER öğesine tıklar' <-> @And(\"^TRANSFER öğesine tıklar$\") transferOgesineTiklar() -> deneme3Page.clickTransferButton() <-> IDeneme3Page void clickTransferButton() <-> Deneme3Page extends Model implements IDeneme3Page with @FindBy + public IMobileElement transferButton). Validation STRUCTURE_VERIFIED; framework_compile NOT_VERIFIED, java_syntax PASS, sensitive_data PASS. ZIP downloaded (amts-deneme-3-cucumber-pom.zip) with toast 'ZIP indirildi — doğrulama durumu: STRUCTURE_VERIFIED'. /sessions lists 5 sessions incl. DENEME-3 (no delete/replay clicked). /recorder loads (BOŞTA, agent-not-connected banner) with no page errors; recording NOT started. localStorage keys amts.codegen.profile and amts.codegen.pom.MOBILDENIZ.v1 cleared (verified null).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Package 'testAutomation.mobile.mobildeniz.tests.V3' not seen in config text because PAKETLER section is collapsed (inputs not rendered); confirmed indirectly via generated paths/package declarations (src/test/java/testAutomation/mobile/mobildeniz/tests/V3/Deneme3Test.java, contracts/V3, android/V3). Not a bug."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100% (21/21 real checks; 1 selector-scope artifact for collapsed PAKETLER section, verified via generated output)"},
+  "seed_data_creation": "None. No sessions created/deleted, no replays, no recording, no heartbeats.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Stage 3 sections 13-14 UI verification done read-only. CodePreview file tab testids: cg-file-tab-{feature,steps,contract,android,readme}; content in textarea cg-editor. PomConfigPanel sections (PAKETLER etc.) are collapsible - expand before reading package inputs. Clear localStorage amts.codegen.* after tests."
+}
