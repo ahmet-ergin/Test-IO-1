@@ -225,11 +225,15 @@ async def check_syntax(files, cfg: PomConfig):
             "details": [] if ok else r["lines"][:40]}
 
 
-def check_class_conflicts(files, cfg: PomConfig):
+def check_class_conflicts(files, cfg: PomConfig, classes: dict):
     existing = {x.strip() for x in cfg.existingClassNames if x.strip()}
+    iface = classes["iface"]
+    implied = set()
+    if any(pm and pm["iface"] == iface for pm in (parse_page_method(x) for x in cfg.existingPageMethods if x.strip())):
+        implied = {f"{cfg.contractsPackage}.{iface}", f"{cfg.androidPackage}.{classes['android']}"}
     out, fail = [], []
     for fq in sorted(defined_classes([f for f in files if f["path"].endswith(".java")])):
-        if fq in existing or simple(fq) in existing:
+        if fq in existing or simple(fq) in existing or fq in implied:
             fail.append(f"{fq} projenizde mevcut olarak bildirildi ama tam .java dosyası olarak üretilmiş; üzerine yazma riski. "
                         "Yalnızca eklenecek parça (.amts-members.txt) kullanılmalı.")
     for f in files:
@@ -237,6 +241,7 @@ def check_class_conflicts(files, cfg: PomConfig):
             out.append(f"{f.get('snippetOf') or f['path']} mevcut: yalnızca eklenecek parça üretildi ({f['path']}); otomatik birleştirme yapılmaz.")
     return {"id": "class_collisions", "status": "FAIL" if fail else ("WARN" if out else "PASS"),
             "summary": (f"{len(existing)} mevcut sınıf adıyla karşılaştırıldı" if existing else "Mevcut sınıf adı girilmedi")
+            + ("; mevcut Page Interface metotları bildirildiği için interface ve Android page mevcut kabul edildi" if implied else "")
             + ("; mevcut sınıflar için tam dosya yerine eklenecek parça üretildi" if out else ""),
             "details": fail + out}
 
@@ -305,14 +310,15 @@ def check_sensitive(files, cfg: PomConfig):
                 body = re.sub(r"//[^\n]*", "", re.sub(r"/\*.*?\*/", "", m.group(2), flags=re.S))
                 if head not in body:
                     e.append(f"Gizli veri adımı güvenli sağlayıcıyı ({head}…) kullanmıyor.")
-                if '"' in body.replace(head, "") and cfg.secretProvider == "HELPER":
-                    e.append("Gizli veri adımında metin sabiti var; değer yalnızca anahtar ile sağlayıcıdan çözülmeli.")
+                if cfg.secretProvider == "HELPER" and not re.fullmatch(rf"\s*\w+\.\w+\(\s*{re.escape(head)}\s*\w+\s*\)\s*\)\s*;\s*", body):
+                    e.append("Gizli veri adımı yalnızca 'page.metot(" + head + "anahtar));' çağrısı içermeli; sabit veya ara değişken kullanılmamalı.")
         if f.get("role") == "android":
             code = re.sub(r"/\*.*?\*/", "", f["content"], flags=re.S)
-            for m in re.finditer(r"public\s+void\s+(\w+)\s*\([^)]*\)\s*\{([^}]*)\}", code):
-                body = re.sub(r"//[^\n]*", "", m.group(2))
-                if ".sendKeys(" in body and '"' in body:
-                    e.append(f"{f['path']}: {m.group(1)} metodunda sendKeys ile birlikte metin sabiti var; değer parametre olarak gelmeli.")
+            for m in re.finditer(r"public\s+void\s+(\w+)\s*\(([^)]*)\)\s*\{([^}]*)\}", code):
+                body = re.sub(r"//[^\n]*", "", m.group(3))
+                params = {p.split()[-1] for p in m.group(2).split(",") if p.strip()}
+                if ".sendKeys(" in body and ('"' in body or any(a.strip() not in params for a in re.findall(r"\.sendKeys\(([^)]*)\)", body))):
+                    e.append(f"{f['path']}: {m.group(1)} metodunda sendKeys değeri doğrudan metot parametresinden gelmeli (sabit/ara değişken yok).")
         if f.get("role") == "secrets" and not ("System.getenv" in f["content"] and "IllegalStateException" in f["content"]):
             e.append(f"{f['path']}: gizli veri yardımcısı eksik değer için açık hata fırlatmalı.")
     return {"id": "sensitive_data", "status": "FAIL" if e else "PASS", "details": e,
@@ -324,7 +330,7 @@ async def validate_pom(files, cfg: PomConfig, classes: dict) -> dict:
     original = files
     files = expand_snippets(files, cfg, classes)
     feat, coll = check_feature(files, cfg)
-    checks = [check_structure(files, cfg, classes), feat, coll, check_class_conflicts(original, cfg), check_sensitive(files, cfg),
+    checks = [check_structure(files, cfg, classes), feat, coll, check_class_conflicts(original, cfg, classes), check_sensitive(files, cfg),
               await check_syntax(files, cfg),
               {"id": "framework_compile", "status": "NOT_VERIFIED", "details": [],
                "summary": "Kurum içi framework bağımlılıkları bu ortamda erişilebilir değil; gerçek framework'e karşı derleme doğrulanmadı. "

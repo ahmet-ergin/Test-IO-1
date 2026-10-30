@@ -1,0 +1,34 @@
+{
+  "summary": "Retest of the iteration_10 phase-2 fixes on the MobilDeniz - Cucumber POM profile. All three reported fixes are verified. HIGH (generate path): all four DENEME-3 cases produce only IDeneme3Page.amts-members.txt and Deneme3Page.amts-members.txt parts, with no full IDeneme3Page.java or Deneme3Page.java, class_collisions WARN and STRUCTURE_VERIFIED. The cases are 'boolean clickTransferButton()', 'void somethingElse()', a step reused via existingStepTexts plus 'void clickTransferButton()', and an FQ interface name. The boolean conflict gives clickTransferButtonAmts in the contract, android and step parts. The overload case (String) and the case where all three classes exist also give parts only, WARN and STRUCTURE_VERIFIED. An unrelated interface (IOtherPage) still gets full files and PASS. Minor (check_sensitive): the '\"8888\" /* AmtsSecureData.require( */' trick gives FAIL, a '// AmtsSecureData.require(' line-comment trick gives FAIL, android 'String p = \"7777\"; pinInput.sendKeys(p);' gives FAIL, and the regex-style @And annotation is matched. Unedited DENEME-1 still gives PASS and STRUCTURE_VERIFIED. Minor (ZIP): a feature edited to '\"LEAK5555\" yazar' does not leak into AMTS_VALIDATION.md or amts-validation.json. Regression: internal suites 58/58, external suites 60/60, new file test_codegen_phase2_fixes_external.py 11/12, Java agent mvn tests 28/28. Frontend /code-generator: MobilDeniz with 'IDeneme3Page: void somethingElse()' for DENEME-3 shows tabs deneme_3.feature, Deneme3Test.java, IDeneme3Page.amts-members.txt, Deneme3Page.amts-members.txt and AMTS_INTEGRATION.md, with class_collisions WARN, sensitive_data PASS and STRUCTURE_VERIFIED. The Gauge profile gives VERIFIED. No page errors. The amts.codegen.* localStorage keys were cleared. No replays or session mutations were triggered. Remaining gaps: the validate/zip path does not flag a full interface .java when existingPageMethods declares the interface, and unquoted values a user types into the .feature are not masked in the reports.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/codegen/pom/validate and /zip (check_class_conflicts)", "issue": "Generation is fixed, but the validator is inconsistent. If the user sends the full IDeneme3Page.java or Deneme3Page.java (for example from an earlier generate) with existingPageMethods ['IDeneme3Page: void somethingElse()'], class_collisions is PASS and not FAIL. check_class_conflicts only checks cfg.existingClassNames, not the interface or android FQCNs implied by existingPageMethods. The existingClassNames path correctly gives FAIL. Repro: tests/test_codegen_phase2_fixes_external.py::test_full_iface_sent_with_methods_fails."},
+      {"endpoint": "/api/codegen/pom/zip and /validate (report_safe / feature_match details)", "issue": "Only double-quoted literals are masked. A feature step edited to 'pinInput alanına LEAK6666 yazar' (unquoted) or 'pinInput alanına 'LEAK7777' yazar' (single quotes) is echoed verbatim in the feature_match details of AMTS_VALIDATION.md, amts-validation.json and the /validate response. This is low risk because the user typed the value, but it is still the value."},
+      {"endpoint": "check_sensitive (informational)", "issue": "Indirect constants defined outside the method body are not detected. Examples: 'typePinInput(PIN); AmtsSecureData.require(key);' in the step, and 'pinInput.sendKeys(PIN_CONST)' in android. The android body regex [^}]* also stops at the first '}'. Low priority."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Kod Üreteci > validation panel > class_collisions", "issues": ["When WARN comes from existingPageMethods, the summary still says 'Mevcut sınıf adı girilmedi; ...', which is misleading. It should mention the interface/page methods given as already existing."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_codegen_phase2_fixes_external.py", "/app/test_reports/pytest/iter11_fixes.xml", "/app/test_reports/pytest/iter11_ext.xml"],
+  "action_items": [
+    "Minor: in check_class_conflicts (pom_validate.py), also treat the contract and android FQCNs as existing when any parsed existingPageMethods entry targets the interface. A full .java for them should give FAIL, matching the existingClassNames path.",
+    "Minor: in report_safe, consider masking or redacting feature_match details for the sensitive (gizli test verisi / pinInput) steps, or masking single-quoted and unquoted values, so user-edited values are not echoed.",
+    "Cosmetic: adjust the class_collisions summary when parts are produced because of existingPageMethods."
+  ],
+  "critical_code_review_comments": [
+    "pom_validate.check_sensitive android body regex '\\{([^}]*)\\}' stops at nested braces, so only text before the first '}' is checked.",
+    "expand_snippets keeps non-matching existing interface entries (pm['ifaceFq'] is not filtered by package, unlike _apply_existing). This could inject methods from a same-named interface in another package into the rebuilt class. Low impact."
+  ],
+  "updated_files": ["/app/backend/tests/test_codegen_phase2_fixes_external.py"],
+  "success_rate": {"backend": "98% (129/130 incl. 1 documented validator gap)", "frontend": "100%"},
+  "seed_data_creation": "None. Read-only plan/generate/validate/zip only.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "DENEME1=251832fb-ff5a-4a3e-bdea-c5c8b6f997cf, DENEME3=976206fa-7e7d-4da1-b8c8-399f2d24f955. Profile option testids: cg-profile-opt-POM-MOBILDENIZ, cg-profile-opt-GAUGE. Session option: cg-session-opt-{id}. File tabs: cg-file-tab-{role}. Check statuses: cg-check-{id}-status. test_full_iface_sent_with_methods_fails is expected to fail until the validator gap is fixed. Java agent: cd /app/recorder-agent && mvn -o test (28 pass)."
+}

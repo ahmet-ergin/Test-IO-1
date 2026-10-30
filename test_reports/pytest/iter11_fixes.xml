@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="12" time="8.440" timestamp="2026-10-30T13:56:11.812799+00:00" hostname="agent-env-2e350da2-5d89-4d75-89fe-dfa65fe6db36"><testcase classname="tests.test_codegen_phase2_fixes_external" name="test_existing_iface_only_parts[boolean_conflict]" time="0.929" /><testcase classname="tests.test_codegen_phase2_fixes_external" name="test_existing_iface_only_parts[other_method]" time="0.525" /><testcase classname="tests.test_codegen_phase2_fixes_external" name="test_existing_iface_only_parts[step_reused_plus_method]" time="0.568" /><testcase classname="tests.test_codegen_phase2_fixes_external" name="test_existing_iface_only_parts[fq_iface]" time="0.527" /><testcase classname="tests.test_codegen_phase2_fixes_external" name="test_unrelated_iface_keeps_full_files" time="0.511" /><testcase classname="tests.test_codegen_phase2_fixes_external" name="test_full_iface_sent_with_methods_fails" time="1.043"><failure message="AssertionError: assert 'PASS' == 'FAIL'&#10;  &#10;  - FAIL&#10;  + PASS">md = {'javaVersion': '8', 'sourceRoot': 'src/test/java', 'featureDir': 'src/test/resources/features', 'generateFeature': True, ...}
+
+    def test_full_iface_sent_with_methods_fails(md):
+        full = _gen(DENEME3, md)["files"]
+        v = _val(DENEME3, {**md, "existingPageMethods": ["IDeneme3Page: void somethingElse()"]}, full)
+        print(_checks(v)["class_collisions"])
+&gt;       assert _checks(v)["class_collisions"]["status"] == "FAIL"
+E       AssertionError: assert 'PASS' == 'FAIL'
+E         
+E         - FAIL
+E         + PASS
+
+tests/test_codegen_phase2_fixes_external.py:89: AssertionError</failure></testcase><testcase classname="tests.test_codegen_phase2_fixes_external" name="test_secret_step_comment_trick_fails" time="1.132" /><testcase classname="tests.test_codegen_phase2_fixes_external" name="test_secret_step_line_comment_trick_fails" time="0.612" /><testcase classname="tests.test_codegen_phase2_fixes_external" name="test_android_indirect_literal_fails" time="0.565" /><testcase classname="tests.test_codegen_phase2_fixes_external" name="test_unmodified_d1_sensitive_pass" time="0.000" /><testcase classname="tests.test_codegen_phase2_fixes_external" name="test_zip_masks_feature_literal" time="0.590" /><testcase classname="tests.test_codegen_phase2_fixes_external" name="test_gauge_d3_verified" time="0.628" /></testsuite></testsuites>

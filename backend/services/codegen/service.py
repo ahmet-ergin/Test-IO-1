@@ -48,6 +48,8 @@ def report_safe(validation: dict) -> dict:
         if c["id"] in ("javac", "java_syntax"):
             details = [d for d in details if re.match(r"^[\w/.\-]+:\d+: ", d)]
         details = [re.sub(r'"(?:[^"\\\n]|\\.)*"', '"…"', d) for d in details]
+        if c["id"] in ("feature_match", "step_collisions", "sensitive_data"):
+            details = [re.sub(r"'.*'", "'…'", d) for d in details]
         checks.append({**c, "details": details})
     return {**validation, "checks": checks}
 

@@ -132,3 +132,26 @@ def test_sensitive_check_ignores_comments_and_report_masks_literals(client, toke
     z = client.post(f"{POM}/zip", json={"sessionId": sid, "config": _md(client), "files": leak})
     zf = zipfile.ZipFile(io.BytesIO(z.content))
     assert "LEAK5555" not in zf.read("AMTS_VALIDATION.md").decode() and "LEAK5555" not in zf.read("amts-validation.json").decode()
+
+
+def test_validator_flags_full_files_for_declared_interface_and_indirect_values(client, token):
+    sid = _session(client, token, _rich)
+    full = _gen(client, sid, _md(client))["files"]
+    cfg = _md(client, existingPageMethods=["IDeneme3Page: void somethingElse()"])
+    v = client.post(f"{POM}/validate", json={"sessionId": sid, "config": cfg, "files": full}).json()
+    assert _checks(v)["class_collisions"]["status"] == "FAIL" and v["status"] == "FAILED"
+    res = _gen(client, sid, _md(client))
+    via_const = [dict(x, content=x["content"].replace("pinInput.sendKeys(value);", "pinInput.sendKeys(PIN_CONST);"))
+                 if x["role"] == "android" else x for x in res["files"]]
+    v = client.post(f"{POM}/validate", json={"sessionId": sid, "config": _md(client), "files": via_const}).json()
+    assert _checks(v)["sensitive_data"]["status"] == "FAIL"
+    step_const = [dict(x, content=x["content"].replace("deneme3Page.typePinInput(AmtsSecureData.require(key));",
+                                                       "AmtsSecureData.require(key); deneme3Page.typePinInput(PIN);"))
+                  if x["role"] == "steps" else x for x in res["files"]]
+    v = client.post(f"{POM}/validate", json={"sessionId": sid, "config": _md(client), "files": step_const}).json()
+    assert _checks(v)["sensitive_data"]["status"] == "FAIL"
+    leak = [dict(x, content=x["content"].replace('"AMTS_PIN_INPUT" anahtarlı gizli test verisini yazar', "LEAK6666 'LEAK7777' yazar"))
+            if x["role"] == "feature" else x for x in res["files"]]
+    z = client.post(f"{POM}/zip", json={"sessionId": sid, "config": _md(client), "files": leak})
+    rep = zipfile.ZipFile(io.BytesIO(z.content)).read("AMTS_VALIDATION.md").decode()
+    assert "LEAK6666" not in rep and "LEAK7777" not in rep
