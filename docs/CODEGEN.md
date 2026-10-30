@@ -62,3 +62,16 @@ API: `GET /api/codegen/pom/defaults`, `POST /api/codegen/pom/{plan|generate|vali
 - `feature_match`: her feature adımı tam bir Cucumber ifadesiyle eşleşir; `step_collisions`: girilen mevcut ifadelerle belirsizlik/çakışma yok.
 - `java_syntax`: `javac --release 8|11`, kurum içi sınıflar yerine yerel stub'larla (şablonlardan türetilen metot adları, `Object...` parametreler). Cucumber `io.cucumber.java.en.And` gerçek jar'dan gelir (cucumber-java 7.20.1).
 - `framework_compile`: her zaman **NOT_VERIFIED**. En iyi genel durum **STRUCTURE_VERIFIED**'dır, hiçbir zaman VERIFIED değildir.
+
+---
+
+# Yerleşik profil — MobilDeniz - Cucumber POM
+
+Tanım uygulama kodunda bulunur (`backend/services/codegen/pom_config.py` → `MOBILDENIZ`, `GET /api/codegen/pom/profiles`). Tarayıcı verisi silinse de profil kaybolmaz. Profil seçimi ve özelleştirmeler yalnızca tarayıcıda saklanır (`amts.codegen.profile`, `amts.codegen.pom.MOBILDENIZ.v1`). Kullanıcı profilleri `amts.codegen.pom.userProfiles` anahtarında tutulur ve JSON olarak dışa/içe aktarılabilir (`format: amts-codegen-profile`).
+
+- Java 8 · `{name}Test` / `I{name}Page` / `{name}Page` · paketler `testAutomation.mobile.mobildeniz.{tests|pageModels.contracts|pageModels.android}.V3`
+- `extends Test`, `@PageModel`, `extends Model implements I…Page`, `cucumber.api.java.en.And` (Cucumber 4; doğrulama cucumber-java 4.8.1 jar'ı ile yapılır), `public` page ve element alanları, `mobileApp`.
+- Locator: `@FindBy(locator = "id=…", timeout = 2)`, `xpath=…`, `accessibilityId=…` (doğrulanmadı uyarısı). Değer tek kez tırnaklanır (`fill_template_value`); değer zaten `id=`/`xpath=` ile başlıyorsa önek tekrarlanmaz. `timeout = 2` → "Ek anotasyon argümanları" alanından değiştirilebilir veya kaldırılabilir.
+- Step metni regex biçiminde (`"^TRANSFER öğesine tıklar$"`, parametre `"([^"]*)"`); metot adı adım metninden üretilir (`transferOgesineTiklar`).
+- SCROLL: parametresiz `swipeUp()`/`swipeDown()` kullanılmaz; adım **MANUEL UYARLAMA GEREKLİ** olarak işaretlenir, page metodu hata fırlatır.
+- Mevcut sınıf adları kutusu: eşleşme olursa `class_collisions = WARN` uyarısı verilir ve plan ekranında uyarı çıkar; ZIP hiçbir dosyanın üzerine yazmaz.

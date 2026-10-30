@@ -48,9 +48,18 @@ backend/ (FastAPI: api, core, models, services, schemas, tests) · frontend/ (Re
 - Frontend: profile select (Gauge / Cucumber+POM), PomConfigPanel, copy-file / copy-members buttons
 - Tests: backend 49 isolated + 46 external passed; frontend iteration_8 (crash on profile switch fixed by the tester; copy-members on readme fixed; defaults race guarded)
 
+## Iteration 6 (2026-10-30) — Built-in "MobilDeniz - Cucumber POM" profile
+- Built-in profiles defined in backend code (GENERIC, MOBILDENIZ) via GET /api/codegen/pom/profiles; customizations, profile choice and user profiles stored only in the browser (user choice); JSON export/import of user profiles
+- Fixed double quoting: central javautil.fill_template_value (once-quoted, no repeated id=/xpath= prefix); findByExtraArgs (timeout = 2 default in MobilDeniz); unverifiedLocatorStrategies warning
+- Cucumber 4 regex step texts (stepTextStyle REGEX) and step-text method names (stepMethodNaming STEP_TEXT); cucumber-java 4.8.1 jar for validation
+- SCROLL with empty template -> MANUAL status (MANUEL UYARLAMA GEREKLİ), no parameterless swipe calls
+- existingClassNames -> class_collisions WARN + plan alert
+- Tests: backend 52 isolated + 53 external; iteration_9 frontend 100%
+
 ## Not yet done / backlog
 - P0: Real-device acceptance test on user's Mac (docs/setup/LOCAL_VALIDATION.md); build companion APK
 - P0: User runs physical-device replay acceptance (REPLAY_MVP.md)
 - P1: User integrates generated code into the real framework and reports actual driver/helper signatures
+- P1: Scroll steps with a target element (swipeUpUntilElementAppears(IMobileElement, int)) for the MobilDeniz profile
 - P1: Phase 2 Locator Engine (on-device validation, scoring) — only after approval
 - P2: Phase 3 AI, Phase 4 Code generator, Phase 5 Jira/Zephyr, iOS; TypeScript migration; Postgres adapter if required

@@ -1,0 +1,27 @@
+{
+  "summary": "Tested the MobilDeniz - Cucumber POM profile on the backend and the frontend. A route guard blocked any non-GET replay or heartbeat request (none fired), no sessions or settings were changed, and all 5 amts.codegen.* localStorage keys were cleared at the end (confirmed empty). BACKEND: the requested pytest set gives 52/52 passed. New external file test_codegen_mobildeniz_external.py runs against the public URL: 7/7 passed. It covers the profiles list (GENERIC and MOBILDENIZ with full config), DENEME-3 -> STRUCTURE_VERIFIED, the Deneme3Test steps file, @FindBy(locator = \"id=...transferButton\", timeout = 2) with no id=\", the scroll session (SCROLL rows MANUAL, MANUEL UYARLAMA GEREKLİ, no swipe calls, LONG_PRESS with ACCESSIBILITY_ID and LOCATOR_PREFIX_UNVERIFIED), the class collision giving WARN while overall stays STRUCTURE_VERIFIED, and the generic profile unchanged. Edge cases of fill_template_value pass: a quote in the value is escaped once, and an existing id= prefix is not repeated. FRONTEND: every requested flow passed: the 3 select options, auto-fill on selection, the 5 file tabs, the PASS collision check, clearing extraArgs giving @FindBy without timeout, persistence after reload, reset restoring timeout = 2, the cg-class-conflicts alert with WARN, profile save/export/import/delete (including the invalid-file error toast), legacy CUCUMBER_POM mapping to generic with the amber fictional note, generic STRUCTURE_VERIFIED, Gauge VERIFIED, and the scroll session in the UI. No page errors. The iteration_8 readme cg-copy-members bug is now fixed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Kod Üreteci POM ConfigPanel / Genel", "issues": ["The 3-column Step sınıfı / Interface / Android sınıfı inputs are too narrow: the values are cut off ('{name}Te…', 'I{name}P…'). Consider 1 or 2 columns, or a smaller font."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_codegen_mobildeniz_external.py", "/app/backend/tests/test_codegen_mobildeniz.py", "/app/test_reports/pytest/mobildeniz_ext.xml"],
+  "action_items": [
+    "Optional: widen the class pattern inputs in PomConfigPanel so the values are not cut off."
+  ],
+  "critical_code_review_comments": [
+    "ProfileManager.importProfile does not check data.baseProfile against the built-in ids. An unknown id falls back to GENERIC defaults in defaultsFor, but baseOf() returns the unknown id, so Delete navigates to POM:<unknown>. The effect then redirects to POM:GENERIC, so this is harmless, but the import should normalise baseProfile.",
+    "Import does not check the shape of data.config (only typeof object). merge() with the defaults keeps it safe for known keys, but arrays or nulls inside could still break the panel.",
+    "Pydantic deprecation in pom_planner.py:93: instance.model_fields should be type(cfg.actionTemplates).model_fields."
+  ],
+  "updated_files": ["/app/backend/tests/test_codegen_mobildeniz_external.py"],
+  "success_rate": {"backend": "100% (52/52 + 7/7 external)", "frontend": "100% of requested flows"},
+  "seed_data_creation": "None. User profiles were created only in the browser's localStorage, then cleared.",
+  "test_credentials": "None required",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Each browser_automation call opens a fresh context with empty localStorage (it defaults to Gauge), so select cg-profile-opt-POM-MOBILDENIZ first. Read file contents with input_value on [data-testid=cg-editor] (a textarea); inner_text does not work. The Locators and Data accordion sections are closed by default, so check aria-expanded. The scroll session is opened via ?session=fa049f6e-4d45-47a3-a87e-5c29140ffbf5. Delete uses window.confirm, so accept the dialog."
+}

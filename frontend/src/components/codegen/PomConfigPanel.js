@@ -28,7 +28,7 @@ export const PomConfigPanel = ({ cfg, onChange, derived }) => {
             <Choice {...p} path="javaVersion" label="Java sürümü" options={[["8", "Java 8"], ["11", "Java 11"]]} />
             <Text {...p} path="pageName" label="Sayfa adı ({name})" placeholder={derived?.pageName || "oturum adından"} />
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 gap-2">
             <Text {...p} path="stepClassPattern" label="Step sınıfı" />
             <Text {...p} path="interfacePattern" label="Interface" />
             <Text {...p} path="androidClassPattern" label="Android sınıfı" />
