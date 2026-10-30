@@ -1,0 +1,39 @@
+{
+  "summary": "AMTS Kod Üreteci phase 2 (sensitive data, conflicts, profile management). Backend: the 56/56 internal tests and the 53/53 external tests in the requested suites pass. A new external file test_codegen_phase2_external.py passes 7/7. It covers DENEME-1: AmtsSecureData.java with getenv, -D and IllegalStateException; the step calls AmtsSecureData.require(key); sensitive_data PASS; only AMTS_ keys for the sensitive rows; a pinInput.sendKeys(\"1234\") edit gives sensitive_data FAIL and FAILED; javac string literals are masked in the ZIP report. It also covers DENEME-3: an exact step gives REUSED; an ambiguous one gives AMBIGUOUS_EXISTING_STEP and step_collisions FAIL; an existing page method gives contract and android .amts-members.txt parts, the step calls clickTransferButton(), STRUCTURE_VERIFIED and class_collisions WARN; existingClassNames Deneme3Test gives a steps .amts-members.txt part and WARN; sending the full .java gives FAIL. Frontend: the 'Hassas veri & çakışma' section has all fields. Switching HELPER/CUSTOM swaps the fields. Pasting values and running review shows YENİDEN KULLANILDI and the cg-class-conflicts alert. Generate shows the Deneme3Test.amts-members.txt tab, class_collisions WARN, sensitive_data PASS and framework_compile NOT_VERIFIED. Profile management works: saving the same name twice gives ' (2)'; export includes version 1, profileType CUCUMBER_POM and baseProfile; GAUGE, v2 and bad-format imports show error toasts; a valid import works and repeat imports get unique names. Regression: Gauge DENEME-3 VERIFIED, generic POM STRUCTURE_VERIFIED, Recorder/Sessions/Recorded Steps load, no page errors. Probing found one real overwrite risk (HIGH) and two minor gaps in secret-leak detection and report masking.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "/api/codegen/pom/generate (class_conflicts / _apply_existing)", "issue": "Pasting existingPageMethods for IDeneme3Page proves that the interface and Android page already exist in the user's project. Even so, if no pasted method is reused exactly, the full IDeneme3Page.java and Deneme3Page.java (with package and class header) are still generated, and class_collisions is PASS. This happens (a) when the only matching step was REUSED via existingStepTexts, which produces an empty full interface and class, (b) with a return-type conflict ('IDeneme3Page: boolean clickTransferButton()'), which produces a full IDeneme3Page.java with only clickTransferButtonAmts(), and (c) when only other methods are pasted ('IDeneme3Page: void somethingElse()'). Copying these files would overwrite the existing MobilDeniz interface. This breaks the user rule 'never overwrite existing classes'.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "/api/codegen/pom/validate (check_sensitive)", "issue": "The secret-provider check looks for the 'AmtsSecureData.require(' substring in the raw step body, without first dropping comments. A step body edited to deneme1Page.typePinInput(\"8888\" /* AmtsSecureData.require( */) gives sensitive_data PASS and STRUCTURE_VERIFIED. An indirect constant (String p = \"7777\"; pinInput.sendKeys(p);) is not detected either. Fix: strip comments before the check, and flag string literals passed to type*/sendKeys in the sensitive steps."},
+      {"endpoint": "/api/codegen/pom/zip (report_safe)", "issue": "Only javac/java_syntax details are masked. feature_match details quote the feature step text. If the user edits a secret step to '\"LEAK5555\" yazar', AMTS_VALIDATION.md and amts-validation.json contain 'pinInput alanına \"LEAK5555\" yazar'. Fix: mask quoted literals in feature_match and step_collisions details too, or in all checks."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Kod Üreteci toasts", "issues": ["Several sonner toasts stack quickly during repeated import attempts. This is cosmetic only."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_codegen_phase2_external.py", "/app/backend/tests/test_codegen_phase2.py", "/app/test_reports/pytest/phase2_ext.xml"],
+  "action_items": [
+    "HIGH: in class_conflicts(), treat the contract and android FQCNs as existing whenever any parsed existingPageMethods entry targets this interface (not only when pageReused). Then deliver them only as .amts-members.txt parts, including the PAGE_METHOD_SIGNATURE_CONFLICT (…Amts) and overload cases. Add a test for the boolean-return conflict and for 'step reused + page method pasted'.",
+    "Minor: in check_sensitive, apply _code_only or strip /* */ comments before searching for the provider head, and flag string literals passed to page methods in the secret steps.",
+    "Minor: in report_safe, mask string literals in feature_match and step_collisions details as well, so values a user edited into the .feature are not written to the ZIP report."
+  ],
+  "critical_code_review_comments": [
+    "The members part for an existing step class always includes 'public IDeneme3Page deneme3Page;'. If the existing Deneme3Test already declares that field, pasting the part causes a duplicate-field compile error. Consider a comment marking the field as 'add only if missing', or a config option.",
+    "existingStepTexts in EXPRESSION style that also match generated steps produce a collision. That is fine, but the REUSED logic requires a unique match across all existing texts only. Generated defs are not considered, which is correct for REUSED rows.",
+    "Pydantic deprecation is still present: pom_planner.py:120 cfg.actionTemplates.model_fields should be accessed on the class.",
+    "ProfileManager.importProfile checks version before profileType. A file with an unexpected type and version 2 only reports the version. This is acceptable."
+  ],
+  "updated_files": ["/app/backend/tests/test_codegen_phase2_external.py"],
+  "success_rate": {"backend": "100% of the requested tests (56/56 internal, 53/53 external, 7/7 new phase-2 external); 1 HIGH and 2 minor issues found by extra probing", "frontend": "100% of the requested flows"},
+  "seed_data_creation": "None. Only read-only plan/generate/validate/zip calls were made. User profiles were created only in the browser's localStorage, and all 5 amts.codegen.* keys were cleared at the end of each browser run.",
+  "test_credentials": "None required",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Each browser_automation run has an empty localStorage, so select cg-profile-opt-POM-MOBILDENIZ first. The 'Hassas veri & çakışma' section is cg-section-data; check aria-expanded. The step-texts textarea is cg-pom-existingStepTexts, and the provider select is cg-secretProvider with options cg-secretProvider-opt-HELPER/CUSTOM. Plan status badges are cg-plan-status-N, and checks are cg-check-<id>-status. For import, use set_input_files on cg-profile-import-input with a buffer; export uses expect_download. Probe scripts are in /tmp/leak_probe.py and /tmp/combo_probe.py (localhost:8001).",
+  "rca of the issue": "class_conflicts() in pom_planner.py adds the contract and android FQCNs only when some method has pageReused=True, i.e. an exact void-signature match on a method that is not step-reused. It ignores the fact that any pasted 'IDeneme3Page: …' line means the interface exists. So the reused-step, return-type-conflict and other-method cases fall back to full .java output. Mitigation: if any parse_page_method result has iface equal to the generated interface, add fqs[1:3] to the conflicts."
+}

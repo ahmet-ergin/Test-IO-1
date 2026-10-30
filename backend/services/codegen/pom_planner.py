@@ -279,6 +279,9 @@ def class_conflicts(rc: PomConfig, methods=None, rows=None) -> list:
     fqs = [f"{rc.stepsPackage}.{n['step']}", f"{rc.contractsPackage}.{n['iface']}", f"{rc.androidPackage}.{n['android']}", rc.helper_fqcn()]
     existing = {x.strip() for x in rc.existingClassNames if x.strip()}
     out = [fq for fq in fqs if fq in existing or fq.rsplit(".", 1)[-1] in existing]
-    if any(m.get("pageReused") for m in methods or []):
+    iface = n["iface"]
+    declared = any(pm and pm["iface"] == iface and pm["ifaceFq"] in (iface, f"{rc.contractsPackage}.{iface}")
+                   for pm in (parse_page_method(x) for x in rc.existingPageMethods if x.strip()))
+    if declared or any(m.get("pageReused") for m in methods or []):
         out += [fq for fq in fqs[1:3] if fq not in out]
     return out

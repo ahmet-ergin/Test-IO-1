@@ -100,3 +100,35 @@ def test_existing_page_method_reuse_and_snippets(client, token):
     v = client.post(f"{POM}/validate", json={"sessionId": sid, "config": cfg, "files": broken}).json()
     assert v["status"] == "FAILED"
     assert client.post(f"{POM}/plan", json={"sessionId": sid, "config": _md(client, existingPageMethods=["clickX()"])}).status_code == 422
+
+
+def test_declared_interface_is_never_regenerated_in_full(client, token):
+    sid = _session(client, token, _rich)
+    for methods, extra in ((["IDeneme3Page: boolean clickTransferButton()"], {}), (["IDeneme3Page: void somethingElse()"], {}),
+                           (["IDeneme3Page: void clickTransferButton()"], {"existingStepTexts": ["^TRANSFER öğesine tıklar$"]})):
+        res = _gen(client, sid, _md(client, existingPageMethods=methods, **extra))
+        paths = [f["path"] for f in res["files"]]
+        assert not any(p.endswith("IDeneme3Page.java") or p.endswith("V3/Deneme3Page.java") for p in paths), (methods, paths)
+        assert res["validation"]["status"] == "STRUCTURE_VERIFIED", (methods, res["validation"])
+        assert _checks(res["validation"])["class_collisions"]["status"] == "WARN"
+    conflict = _gen(client, sid, _md(client, existingPageMethods=["IDeneme3Page: boolean clickTransferButton()"]))
+    assert "void clickTransferButtonAmts();" in _by(conflict)["contract"]["content"]
+
+
+def test_sensitive_check_ignores_comments_and_report_masks_literals(client, token):
+    sid = _session(client, token, _rich)
+    res = _gen(client, sid, _md(client))
+    sneaky = [dict(x, content=x["content"].replace("deneme3Page.typePinInput(AmtsSecureData.require(key));",
+                                                   'deneme3Page.typePinInput("8888" /* AmtsSecureData.require( */);'))
+              if x["role"] == "steps" else x for x in res["files"]]
+    v = client.post(f"{POM}/validate", json={"sessionId": sid, "config": _md(client), "files": sneaky}).json()
+    assert _checks(v)["sensitive_data"]["status"] == "FAIL"
+    indirect = [dict(x, content=x["content"].replace("pinInput.sendKeys(value);", 'String p = "7777";\n        pinInput.sendKeys(p);'))
+                if x["role"] == "android" else x for x in res["files"]]
+    v = client.post(f"{POM}/validate", json={"sessionId": sid, "config": _md(client), "files": indirect}).json()
+    assert _checks(v)["sensitive_data"]["status"] == "FAIL"
+    leak = [dict(x, content=x["content"].replace('"AMTS_PIN_INPUT" anahtarlı gizli test verisini yazar', '"LEAK5555" yazar'))
+            if x["role"] == "feature" else x for x in res["files"]]
+    z = client.post(f"{POM}/zip", json={"sessionId": sid, "config": _md(client), "files": leak})
+    zf = zipfile.ZipFile(io.BytesIO(z.content))
+    assert "LEAK5555" not in zf.read("AMTS_VALIDATION.md").decode() and "LEAK5555" not in zf.read("amts-validation.json").decode()

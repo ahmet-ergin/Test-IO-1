@@ -301,9 +301,18 @@ def check_sensitive(files, cfg: PomConfig):
     head = f"{cfg.secretHelperClass}.require(" if cfg.secretProvider == "HELPER" else cfg.secretValueTemplate.split("{key}")[0]
     for f in files:
         if f.get("role") == "steps":
-            for m in re.finditer(r'@\w+\(\s*"([^"\n]*gizli test verisi[^"\n]*)"\s*\)\s*public\s+void\s+\w+\s*\([^)]*\)\s*\{([^}]*)\}', f["content"]):
-                if head not in m.group(2):
+            for m in re.finditer(r'@\w+\(\s*"((?:[^"\\\n]|\\.)*?gizli test verisi(?:[^"\\\n]|\\.)*)"\s*\)\s*public\s+void\s+\w+\s*\([^)]*\)\s*\{([^}]*)\}', f["content"]):
+                body = re.sub(r"//[^\n]*", "", re.sub(r"/\*.*?\*/", "", m.group(2), flags=re.S))
+                if head not in body:
                     e.append(f"Gizli veri adımı güvenli sağlayıcıyı ({head}…) kullanmıyor.")
+                if '"' in body.replace(head, "") and cfg.secretProvider == "HELPER":
+                    e.append("Gizli veri adımında metin sabiti var; değer yalnızca anahtar ile sağlayıcıdan çözülmeli.")
+        if f.get("role") == "android":
+            code = re.sub(r"/\*.*?\*/", "", f["content"], flags=re.S)
+            for m in re.finditer(r"public\s+void\s+(\w+)\s*\([^)]*\)\s*\{([^}]*)\}", code):
+                body = re.sub(r"//[^\n]*", "", m.group(2))
+                if ".sendKeys(" in body and '"' in body:
+                    e.append(f"{f['path']}: {m.group(1)} metodunda sendKeys ile birlikte metin sabiti var; değer parametre olarak gelmeli.")
         if f.get("role") == "secrets" and not ("System.getenv" in f["content"] and "IllegalStateException" in f["content"]):
             e.append(f"{f['path']}: gizli veri yardımcısı eksik değer için açık hata fırlatmalı.")
     return {"id": "sensitive_data", "status": "FAIL" if e else "PASS", "details": e,
