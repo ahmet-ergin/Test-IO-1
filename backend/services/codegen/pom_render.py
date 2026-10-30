@@ -140,7 +140,7 @@ def render_readme(plan, cfg: PomConfig, files):
         f"- Java {cfg.javaVersion}; Step temel sınıfı `{cfg.stepBaseClass}`; Page temel sınıfı `{cfg.pageBaseClass}`",
         f"- @PageModel: `{cfg.pageModelAnnotation}`; locator anotasyonu: `{cfg.locatorAnnotation}`; element tipi: `{cfg.elementType}`",
         f"- Cucumber: `{cfg.stepAnnotation}`; uygulama nesnesi: `{cfg.appExpression}`",
-        "- Aksiyon şablonları: " + ", ".join(f"{k}=`{v}`" if v else f"{k}=(tanımsız)" for k, v in cfg.actionTemplates.model_dump().items()), "",
+        "- Aksiyon şablonları: " + ", ".join(f"{k}=`{v.replace(chr(10), ' ')}`" if v else f"{k}=(tanımsız)" for k, v in cfg.actionTemplates.model_dump().items()), "",
         "## Uyarılar / desteklenmeyen adımlar", *(issues or ["- Yok"]), "",
         "## Hassas veriler",
         f"Şifre/PIN/OTP değerleri hiçbir dosyaya yazılmaz; feature'da `{cfg.secretKeyPrefix}…` anahtarı geçer ve değer test anında "
