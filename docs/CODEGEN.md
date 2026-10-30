@@ -75,3 +75,11 @@ Tanım uygulama kodunda bulunur (`backend/services/codegen/pom_config.py` → `M
 - Step metni regex biçiminde (`"^TRANSFER öğesine tıklar$"`, parametre `"([^"]*)"`); metot adı adım metninden üretilir (`transferOgesineTiklar`).
 - SCROLL: parametresiz `swipeUp()`/`swipeDown()` kullanılmaz; adım **MANUEL UYARLAMA GEREKLİ** olarak işaretlenir, page metodu hata fırlatır.
 - Mevcut sınıf adları kutusu: eşleşme olursa `class_collisions = WARN` uyarısı verilir ve plan ekranında uyarı çıkar; ZIP hiçbir dosyanın üzerine yazmaz.
+
+---
+
+# 2. aşama — Hassas veri, çakışma kontrolü, profil yönetimi
+
+- **Hassas veri:** Şifre/PIN/OTP alanları algılanır (maskeli/şifre alanı ya da pin, otp, şifre, parola, sms-kod gibi id/hint/açıklama). Değerler hiçbir dosyaya yazılmaz; feature'da `AMTS_…` anahtarı geçer. Step, `AmtsSecureData.require(key)` çağrısını kullanır: önce ortam değişkenine, sonra `-D` sistem özelliğine bakar, değer yoksa `IllegalStateException` fırlatır. İstenirse "Özel sağlayıcı" ifadesi kullanılabilir. `sensitive_data` kontrolü sabit metinleri, ara değişkenleri ve sağlayıcısız gizli adımları reddeder. Doğrulama yanıtı ve ZIP raporu, derleyici kaynak satırlarını ve tüm tırnaklı metinleri maskeler.
+- **Çakışma:** Aynı oturumda aynı locator ve işlem tek step ve tek page metodu olarak üretilir. Yapıştırılan mevcut Cucumber adımları yalnızca kesin ve tekil eşleşmede yeniden kullanılır (REUSED); belirsiz eşleşmede uyarı verilir ve `step_collisions` FAIL olur. Mevcut Page metotları (`IDeneme3Page: void clickTransferButton()`) interface ve imza birlikte eşleşirse yeniden kullanılır; dönüş tipi farklıysa yeni metot `…Amts` adını alır; parametreleri farklıysa overload olarak eklenir. Mevcut sınıflar (bildirilen adlar ya da metotları bildirilen interface/Android page) için yalnızca `.amts-members.txt` parçası üretilir; tam `.java` gönderilirse `class_collisions` FAIL olur. Otomatik birleştirme yapılmaz.
+- **Profil yönetimi:** Aynı adla kaydedilen profil benzersiz ad alır (` (2)`). Dışa aktarımda `profileType` ve `version` bulunur; içe aktarım başka profil türlerini ve daha yeni sürümleri reddeder. localStorage yazma hataları ve yerleşik profil listesinin yüklenememesi kullanıcıya bildirilir.

@@ -56,6 +56,13 @@ backend/ (FastAPI: api, core, models, services, schemas, tests) · frontend/ (Re
 - existingClassNames -> class_collisions WARN + plan alert
 - Tests: backend 52 isolated + 53 external; iteration_9 frontend 100%
 
+## Iteration 7 (2026-10-30) — Phase 2: sensitive data, conflict control, profile fixes
+- AmtsSecureData helper (env → -D → clear error) or CUSTOM provider; PIN/OTP/şifre heuristics; sensitive_data check; report_safe masks literals in ZIP report and /pom/validate response
+- Existing Cucumber steps reused only on exact unique match (REUSED); ambiguous → warning + FAIL; existing page methods matched by interface+signature (reuse / …Amts rename / overload); existing classes delivered as .amts-members.txt only; class_collisions FAIL when full .java sent for an existing class
+- Profile management fixes: unique names, profileType/version on export/import, storage error toasts, builtins load failure handling
+- Tests: backend 59 isolated + 72 external + Java 28; iterations 10–12 (frontend 100% in iteration 11)
+- WAITING for user approval before the next phase
+
 ## Not yet done / backlog
 - P0: Real-device acceptance test on user's Mac (docs/setup/LOCAL_VALIDATION.md); build companion APK
 - P0: User runs physical-device replay acceptance (REPLAY_MVP.md)

@@ -1,0 +1,28 @@
+{
+  "summary": "Backend-only retest of the iteration_11 minor fixes (MobilDeniz - Cucumber POM). All verified. check_class_conflicts: a full IDeneme3Page.java and/or Deneme3Page.java sent to /pom/validate or /pom/zip with existingPageMethods for IDeneme3Page (simple or FQ name) gives class_collisions FAIL and FAILED. The details name each class and the summary mentions 'mevcut Page Interface metotları'. An unrelated IOtherPage gives PASS. The generated parts, and re-validating those parts, give WARN and STRUCTURE_VERIFIED. check_sensitive: android 'pinInput.sendKeys(PIN_CONST);' gives FAIL, as does a nested-brace body with a literal. Step 'AmtsSecureData.require(key); deneme1Page.typePinInput(PIN);' gives FAIL, as does an intermediate variable. Unedited DENEME-1 and DENEME-3 give sensitive PASS and STRUCTURE_VERIFIED. report_safe: values typed as LEAK6666, 'LEAK7777', `LEAK9999` or 'LEAK 8888 x' appear neither in AMTS_VALIDATION.md nor in amts-validation.json. Regression: internal suites 59/59. External suites 72/72, including the previously failing test_full_iface_sent_with_methods_fails and Gauge DENEME-3 VERIFIED. New file test_codegen_phase2_iter12_external.py 17/17. No replays or session mutations were triggered.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/codegen/pom/validate (response body)", "issue": "Informational. report_safe applies only to the ZIP reports. The live /validate JSON response still echoes a user-typed unquoted feature value (e.g. LEAK6666) in the feature_match details. It goes only back to the same user, so the risk is low."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_codegen_phase2_iter12_external.py",
+    "/app/test_reports/pytest/iter12_new.xml",
+    "/app/test_reports/pytest/iter12_ext.xml"
+  ],
+  "action_items": [
+    "Optional: apply report_safe masking to the /pom/validate API response too, for consistency.",
+    "Optional: external suites test_codegen_pom_external.py and test_codegen_external.py need REACT_APP_BACKEND_URL exported (they call os.environ.get(...).rstrip without a fallback)."
+  ],
+  "critical_code_review_comments": [
+    "class_collisions summary still begins with 'Mevcut sınıf adı girilmedi' even when the implied-existing clause follows. This is acceptable but slightly awkward."
+  ],
+  "updated_files": ["/app/backend/tests/test_codegen_phase2_iter12_external.py"],
+  "success_rate": {"backend": "100%", "frontend": "skipped (verified in iteration_11)"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Run the external suites with: export REACT_APP_BACKEND_URL=$(grep REACT_APP_BACKEND_URL /app/frontend/.env | cut -d= -f2). pytest.ini uses xdist; use -n0 to see prints. Sessions are DENEME1=251832fb-..., DENEME3=976206fa-... (read-only, used for generate/validate/zip only)."
+}

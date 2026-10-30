@@ -138,7 +138,7 @@ async def _pom_validated(body: PomFilesRequest):
 @router.post("/pom/validate")
 async def pom_validate(body: PomFilesRequest):
     _, _, v = await _pom_validated(body)
-    return v
+    return cg.report_safe(v)
 
 
 @router.post("/pom/zip")
