@@ -4,7 +4,8 @@ from services.export_service import build_export
 from services.codegen.javautil import java_str, jcamel as camel, jpascal as pascal, jconst as const, is_ident, comment_safe, \
     fill_template_value, ascii_fold
 from services.codegen.planner import _sensitive, _label, _scroll_direction, _issue, MASK
-from services.codegen.pom_config import PomConfig, resolve_pom, LOCATOR_STRATEGIES, cucumber_text
+from services.codegen.pom_config import PomConfig, resolve_pom, LOCATOR_STRATEGIES, cucumber_text, parse_page_method
+from services.codegen.javautil import jwords
 
 ELEMENT_ACTIONS = {"TAP", "INPUT_TEXT", "LONG_PRESS"}
 DIR_TR = {"DOWN": "aşağı", "UP": "yukarı", "LEFT": "sola", "RIGHT": "sağa"}
@@ -52,6 +53,32 @@ def _choose(st: dict, cfg, issues: list):
     return chosen, [x for x in locs if x is not chosen]
 
 
+SENSITIVE_TOKENS = {"pin", "otp", "password", "passwd", "pass", "passcode", "pwd", "sifre", "parola", "cvv", "cvc", "tckn", "secret"}
+SENSITIVE_JOINED = ("smscode", "smskod", "dogrulamakod", "verificationcode", "onaykod", "guvenlikkod", "securitycode")
+
+
+def pom_sensitive(ev: dict) -> bool:
+    """Masked/password fields, plus PIN/OTP/şifre-like ids, hints or descriptions (values are never written for these)."""
+    if _sensitive(ev):
+        return True
+    el = ev.get("element") or {}
+    for src in ((el.get("resourceId") or "").split("/")[-1], el.get("hint"), el.get("contentDesc")):
+        toks = [w.lower() for w in jwords(ascii_fold(src or ""))]
+        if SENSITIVE_TOKENS & set(toks) or any(j in "".join(toks) for j in SENSITIVE_JOINED):
+            return True
+    return False
+
+
+def existing_matchers(cfg: PomConfig):
+    from services.codegen.pom_validate import _matcher
+    out = []
+    for ex in (t.strip() for t in cfg.existingStepTexts if t.strip()):
+        rx, _ = _matcher(ex, cfg.stepTextStyle)
+        if rx is not None:
+            out.append((ex, rx))
+    return out
+
+
 def step_expression(text: str, cfg: PomConfig) -> str:
     """Cucumber annotation text; REGEX style anchors and escapes literal parts, {string} becomes a quoted capture group."""
     if cfg.stepTextStyle != "REGEX":
@@ -77,7 +104,7 @@ def build_steps(doc: dict, cfg: PomConfig):
     for n, st in enumerate(doc["steps"], start=1):
         ev = events.get(st["eventId"]) or {}
         action = st.get("action") or ev.get("action") or "UNKNOWN"
-        sensitive = _sensitive(ev)
+        sensitive = pom_sensitive(ev)
         label = _label(ev, sensitive, n)
         issues, selected, alternatives, element, direction = [], None, [], None, None
         template_key = action
@@ -126,6 +153,8 @@ def build_steps(doc: dict, cfg: PomConfig):
                 issues.append(_issue("info", "SENSITIVE_VALUE", f"Hassas değer koda/feature'a yazılmadı; '{key_name}' anahtarı kullanıldı."))
             else:
                 param = {"name": "value", "specValue": cucumber_text(iv["value"], 80), "secret": False}
+        elif sensitive:
+            issues.append(_issue("info", "SENSITIVE_FIELD", "Alan hassas (şifre/PIN/OTP) olarak algılandı; değer hiçbir çıktıya yazılmaz."))
         verb = getattr(cfg.verbs, "SCROLL" if action == "SCROLL" else action, None) if action in ("TAP", "INPUT_TEXT", "LONG_PRESS", "SCROLL", "BACK") else camel(action) or "perform"
         target = pascal(element) if element else (pascal(direction.lower()) if direction else "")
         if not element and action not in ("SCROLL", "BACK"):
@@ -160,11 +189,76 @@ def build_steps(doc: dict, cfg: PomConfig):
                             "comment": comment_safe(f"{action} · {label}")}
             methods.append(by_key[mkey])
         m = by_key[mkey]
+        if m["order"] != n:
+            issues.append(_issue("info", "SAME_LOCATOR_ACTION", f"Adım {m['order']} ile aynı locator ve işlem; aynı step ve page metodu yeniden kullanıldı."))
         status = "MANUAL" if manual else "UNSUPPORTED" if not supported else ("WARNING" if any(i["level"] == "warning" for i in issues) else "OK")
         rows.append({"order": n, "stepId": st["stepId"], "name": st.get("name"), "action": action, "label": label, "sensitive": sensitive,
                      "selected": selected, "alternatives": alternatives, "supported": supported, "issues": issues, "status": status,
                      "stepText": m["stepText"], "featureText": m["featureText"], "methodName": m["name"], "stepMethod": m["stepMethod"], "element": element, "params": [param] if param else []})
+    _apply_existing(rows, methods, elements, cfg)
     return rows, elements, methods
+
+
+def _feature_line(row, m):
+    t = m["featureText"]
+    return t.replace("{string}", f'"{row["params"][0]["specValue"]}"', 1) if m["param"] and row["params"] else t
+
+
+def _apply_existing(rows, methods, elements, cfg: PomConfig):
+    """Reuse pasted Cucumber steps (only exact, unique matches) and pasted Page Interface methods (interface + signature)."""
+    by_name = {m["name"]: m for m in methods}
+    matchers = existing_matchers(cfg)
+    for r in rows:
+        m = by_name[r["methodName"]]
+        line = _feature_line(r, m)
+        r["featureLine"] = line
+        hits = [ex for ex, rx in matchers if rx.fullmatch(line)]
+        if len(hits) == 1:
+            r["reusedStep"] = hits[0]
+            r["status"] = "REUSED"
+            r["issues"].append(_issue("info", "EXISTING_STEP_REUSED", f"Mevcut adım tekil ve kesin eşleşti, yeniden kullanıldı: '{hits[0]}'. Yeni step tanımı üretilmedi."))
+        elif len(hits) > 1:
+            r["issues"].append(_issue("warning", "AMBIGUOUS_EXISTING_STEP", f"Feature adımı birden fazla mevcut ifadeyle eşleşiyor ({'; '.join(hits[:3])}); "
+                                      "yeniden kullanılmadı. Mevcut adımları netleştirin."))
+            if r["status"] == "OK":
+                r["status"] = "WARNING"
+    for m in methods:
+        mrows = [r for r in rows if r["methodName"] == m["name"]]
+        m["stepReused"] = bool(mrows) and all(r.get("reusedStep") for r in mrows)
+    iface = cfg.names()["iface"]
+    existing = [pm for pm in (parse_page_method(x) for x in cfg.existingPageMethods if x.strip()) if pm and pm["iface"] == iface
+                and (pm["ifaceFq"] == iface or pm["ifaceFq"] == f"{cfg.contractsPackage}.{iface}")]
+    names = {m["name"] for m in methods}
+    for m in methods:
+        if m["stepReused"]:
+            continue
+        params = ["String"] if m["param"] else []
+        same = [pm for pm in existing if pm["name"] == m["name"] and pm["params"] == params]
+        note = None
+        if same and same[0]["ret"] == "void":
+            m["pageReused"] = True
+            note = _issue("info", "EXISTING_PAGE_METHOD_REUSED", f"Mevcut {iface}.{m['name']}({', '.join(params)}) imzası birebir eşleşti; "
+                          "page metodu yeniden üretilmedi, step bu metodu çağırır.")
+        elif same:
+            new, i = m["name"] + "Amts", 2
+            while new in names:
+                new, i = f"{m['name']}Amts{i}", i + 1
+            note = _issue("warning", "PAGE_METHOD_SIGNATURE_CONFLICT", f"Mevcut {iface}.{m['name']} aynı parametrelerle farklı dönüş tipine "
+                          f"({same[0]['ret']}) sahip; çakışmayı önlemek için yeni metot '{new}' olarak adlandırıldı.")
+            for r in rows:
+                if r["methodName"] == m["name"]:
+                    r["methodName"] = new
+            names.add(new)
+            m["name"] = new
+        elif any(pm["name"] == m["name"] for pm in existing):
+            note = _issue("info", "PAGE_METHOD_OVERLOAD", f"Mevcut {iface}.{m['name']} farklı parametrelerle var; yeni metot aşırı yükleme (overload) olarak eklenir.")
+        if note:
+            for r in rows:
+                if r["methodName"] == m["name"]:
+                    r["issues"].append(note)
+    used = {m["element"] for m in methods if not m["stepReused"] and not m.get("pageReused") and m["element"]}
+    for e in elements:
+        e["generated"] = e["name"] in used
 
 
 async def build_pom_plan(session_id: str, cfg: PomConfig) -> dict:
@@ -176,11 +270,15 @@ async def build_pom_plan(session_id: str, cfg: PomConfig) -> dict:
     return {"session": {"id": doc["sessionId"], "name": doc.get("name"), "packageName": doc["application"]["packageName"],
                         "demo": doc["demo"], "status": doc["status"]},
             "config": rc.model_dump(), "steps": rows, "elements": elements, "methods": methods, "summary": summary,
-            "classes": rc.names(), "classConflicts": _class_conflicts(rc)}
+            "classes": rc.names(), "classConflicts": class_conflicts(rc, methods, rows)}
 
 
-def _class_conflicts(rc: PomConfig) -> list:
+def class_conflicts(rc: PomConfig, methods=None, rows=None) -> list:
+    """FQCNs that already exist in the user's project: listed names, plus interface/android page when existing page methods are reused."""
     n = rc.names()
-    fqs = [f"{rc.stepsPackage}.{n['step']}", f"{rc.contractsPackage}.{n['iface']}", f"{rc.androidPackage}.{n['android']}"]
+    fqs = [f"{rc.stepsPackage}.{n['step']}", f"{rc.contractsPackage}.{n['iface']}", f"{rc.androidPackage}.{n['android']}", rc.helper_fqcn()]
     existing = {x.strip() for x in rc.existingClassNames if x.strip()}
-    return [fq for fq in fqs if fq in existing or fq.rsplit(".", 1)[-1] in existing]
+    out = [fq for fq in fqs if fq in existing or fq.rsplit(".", 1)[-1] in existing]
+    if any(m.get("pageReused") for m in methods or []):
+        out += [fq for fq in fqs[1:3] if fq not in out]
+    return out

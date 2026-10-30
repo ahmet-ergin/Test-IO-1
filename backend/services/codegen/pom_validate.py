@@ -3,7 +3,7 @@ import re
 import zipfile
 from functools import lru_cache
 from services.codegen.javautil import simple, pkg_of
-from services.codegen.pom_config import PomConfig
+from services.codegen.pom_config import PomConfig, parse_page_method
 from services.codegen.validate import LIB_DIR, content_hash, path_errors, defined_classes, compile_java, _JSTR, _unescape
 
 GHERKIN_KW = r"(?:Diyelim ki|Eğer ki|O zaman|Ve|Ama|Fakat|Given|When|Then|And|But|\*)"
@@ -60,24 +60,33 @@ def check_feature(files, cfg: PomConfig):
         if style == "REGEX" and d["rx"] is not None and not (d["text"].startswith("^") and d["text"].endswith("$")):
             errors.append(f"{d['method']}: regex ifadesi ^ ile başlamalı ve $ ile bitmeli.")
     feats = [f for f in files if f["path"].endswith(".feature")]
+    ex_defs = []
+    for t in (x.strip() for x in cfg.existingStepTexts if x.strip()):
+        rx, _ = _matcher(t, style)
+        if rx is not None:
+            ex_defs.append({"text": t, "rx": rx, "existing": True})
     used, total = set(), 0
     for f in feats:
         for line, text in feature_steps(f["content"]):
             total += 1
-            hits = [d for d in defs if d["rx"] is not None and d["rx"].fullmatch(text)]
-            if len(hits) != 1:
+            hits = [d for d in defs + ex_defs if d["rx"] is not None and d["rx"].fullmatch(text)]
+            if len(hits) == 0:
+                errors.append(f"{f['path']}:{line} — '{text}' için step definition yok (üretilen veya mevcut).")
+            elif len(hits) > 1 and not all(h.get("existing") for h in hits):
                 errors.append(f"{f['path']}:{line} — '{text}' için {len(hits)} step definition eşleşti (1 olmalı).")
             used |= {h["text"] for h in hits}
     if feats:
         errors += [f"{d['method']} — '{d['text']}' feature dosyasında kullanılmıyor." for d in defs if d["text"] not in used]
     existing = [t.strip() for t in cfg.existingStepTexts if t.strip()]
-    coll = [d["text"] for d in defs if d["text"] in existing]
+    coll = [f"Üretilen ifade mevcut adımla aynı: '{d['text']}'" for d in defs if d["text"] in existing]
     for f in feats:
         for _, text in feature_steps(f["content"]):
-            for ex in existing:
-                rx, _ = _matcher(ex, style)
-                if rx is not None and rx.fullmatch(text):
-                    coll.append(f"'{text}' mevcut '{ex}' ifadesiyle de eşleşir (belirsiz adım)")
+            ex_hits = [e["text"] for e in ex_defs if e["rx"].fullmatch(text)]
+            gen_hits = [d for d in defs if d["rx"] is not None and d["rx"].fullmatch(text)]
+            if len(ex_hits) > 1:
+                coll.append(f"'{text}' birden fazla mevcut ifadeyle eşleşiyor (belirsiz): {'; '.join(ex_hits[:3])}")
+            elif ex_hits and gen_hits:
+                coll.append(f"'{text}' hem üretilen hem mevcut '{ex_hits[0]}' ifadesiyle eşleşir (yinelenen adım)")
     summary = f"{total} feature adımı, {len(defs)} @{simple(cfg.stepAnnotation)} tanımı" if feats else \
         f".feature üretilmedi; {len(defs)} @{simple(cfg.stepAnnotation)} tanımı yalnızca tekrar/parametre açısından kontrol edildi"
     return ({"id": "feature_match", "status": "FAIL" if errors else "PASS", "summary": summary, "details": errors[:50]},
@@ -191,6 +200,9 @@ def pom_stubs(cfg: PomConfig, defined: set) -> dict:
     }
     if cfg.pageFieldAnnotation:
         s[cfg.pageFieldAnnotation] = _annotation(cfg.pageFieldAnnotation, "FIELD", [])
+    if cfg.secretProvider == "HELPER":
+        s[cfg.helper_fqcn()] = (f"package {pkg_of(cfg.helper_fqcn())};\n\npublic final class {cfg.secretHelperClass} {{\n"
+                                f"    public static String require(String key) {{ return null; }}\n}}\n")
     if cfg.stepAnnotation not in _jar_classes():
         s[cfg.stepAnnotation] = _annotation(cfg.stepAnnotation, "METHOD", ["String value();"])
     return {k: v for k, v in s.items() if k not in defined and k not in _jar_classes()}
@@ -215,20 +227,96 @@ async def check_syntax(files, cfg: PomConfig):
 
 def check_class_conflicts(files, cfg: PomConfig):
     existing = {x.strip() for x in cfg.existingClassNames if x.strip()}
-    out = []
+    out, fail = [], []
     for fq in sorted(defined_classes([f for f in files if f["path"].endswith(".java")])):
-        if fq in existing:
-            out.append(f"{fq} projenizde zaten var; dosyanın üzerine yazmayın — 'Üyeleri kopyala' ile mevcut sınıfa ekleyin.")
-        elif simple(fq) in existing:
-            out.append(f"'{simple(fq)}' adlı bir sınıf projenizde var (paket belirtilmedi); {fq} ile karıştırılmadığından emin olun.")
-    return {"id": "class_collisions", "status": "WARN" if out else "PASS",
-            "summary": f"{len(existing)} mevcut sınıf adıyla karşılaştırıldı" if existing else "Mevcut sınıf adı girilmedi",
-            "details": out}
+        if fq in existing or simple(fq) in existing:
+            fail.append(f"{fq} projenizde mevcut olarak bildirildi ama tam .java dosyası olarak üretilmiş; üzerine yazma riski. "
+                        "Yalnızca eklenecek parça (.amts-members.txt) kullanılmalı.")
+    for f in files:
+        if f.get("snippetOf") or f["path"].endswith(".amts-members.txt"):
+            out.append(f"{f.get('snippetOf') or f['path']} mevcut: yalnızca eklenecek parça üretildi ({f['path']}); otomatik birleştirme yapılmaz.")
+    return {"id": "class_collisions", "status": "FAIL" if fail else ("WARN" if out else "PASS"),
+            "summary": (f"{len(existing)} mevcut sınıf adıyla karşılaştırıldı" if existing else "Mevcut sınıf adı girilmedi")
+            + ("; mevcut sınıflar için tam dosya yerine eklenecek parça üretildi" if out else ""),
+            "details": fail + out}
+
+
+_SIMPLE_TYPES = {"void", "String", "int", "long", "boolean", "double", "float", "short", "byte", "char", "Integer", "Long", "Boolean",
+                 "Double", "Float", "Object"}
+
+
+def _safe_type(t):
+    return t if t in _SIMPLE_TYPES else "Object"
+
+
+def expand_snippets(files, cfg: PomConfig, classes: dict):
+    """Rebuilds full classes from '.amts-members.txt' parts (plus declared existing page methods) so they can be validated."""
+    iface = classes["iface"]
+    existing = [pm for pm in (parse_page_method(x) for x in cfg.existingPageMethods if x.strip()) if pm and pm["iface"] == iface]
+
+    def sig(pm):
+        return f"{_safe_type(pm['ret'])} {pm['name']}({', '.join(f'{_safe_type(t)} a{i}' for i, t in enumerate(pm['params']))})"
+
+    out = []
+    for f in files:
+        if not f["path"].endswith(".amts-members.txt"):
+            out.append(f)
+            continue
+        c = f["content"]
+        imports = re.findall(r"^import [\w.]+;$", c, re.M)
+        a, b = c.find("// <amts:members>"), c.find("// </amts:members>")
+        members = c[a + len("// <amts:members>"):b] if a >= 0 and b > a else ""
+        role, path = f.get("role"), f["path"][:-len(".amts-members.txt")] + ".java"
+        if role == "contract":
+            pkg = cfg.contractsPackage
+            ann = simple(cfg.pageModelAnnotation) + (f"({cfg.pageModelArgs})" if cfg.pageModelArgs.strip() else "")
+            head = f"@{ann}\npublic interface {iface} {{"
+            extra = [f"    {sig(pm)};" for pm in existing]
+        elif role == "android":
+            pkg = cfg.androidPackage
+            head = f"public class {classes['android']} extends {simple(cfg.pageBaseClass)} implements {iface} {{"
+            extra = [f'    @Override public {sig(pm)} {{ throw new UnsupportedOperationException("AMTS-EXISTING"); }}' for pm in existing]
+        else:
+            pkg = cfg.stepsPackage
+            head = f"public class {classes['step']} extends {simple(cfg.stepBaseClass)} {{"
+            extra = []
+        content = "\n".join([f"package {pkg};", "", *imports, "", head, *extra, members, "}", ""])
+        out.append({**f, "path": path, "content": content, "expanded": True})
+    return out
+
+
+def check_sensitive(files, cfg: PomConfig):
+    e = []
+    pre = re.escape(cfg.secretKeyPrefix)
+    for f in files:
+        code = _code_only(f["content"])
+        if f["path"].endswith(".java") and re.search(r"\.sendKeys\(\s*\"", code):
+            e.append(f"{f['path']}: sendKeys içinde sabit metin var; hassas değerler parametre/anahtar ile verilmeli.")
+        if f["path"].endswith(".feature"):
+            for line, text in feature_steps(f["content"]):
+                if "gizli test verisi" in text:
+                    vals = re.findall(r'"([^"]*)"', text)
+                    if not vals or not all(re.fullmatch(rf"{pre}[A-Z0-9_]+", v) for v in vals):
+                        e.append(f"{f['path']}:{line} — gizli veri adımı yalnızca {cfg.secretKeyPrefix}… anahtarı içermeli, değer içermemeli.")
+    head = f"{cfg.secretHelperClass}.require(" if cfg.secretProvider == "HELPER" else cfg.secretValueTemplate.split("{key}")[0]
+    for f in files:
+        if f.get("role") == "steps":
+            for m in re.finditer(r'@\w+\(\s*"([^"\n]*gizli test verisi[^"\n]*)"\s*\)\s*public\s+void\s+\w+\s*\([^)]*\)\s*\{([^}]*)\}', f["content"]):
+                if head not in m.group(2):
+                    e.append(f"Gizli veri adımı güvenli sağlayıcıyı ({head}…) kullanmıyor.")
+        if f.get("role") == "secrets" and not ("System.getenv" in f["content"] and "IllegalStateException" in f["content"]):
+            e.append(f"{f['path']}: gizli veri yardımcısı eksik değer için açık hata fırlatmalı.")
+    return {"id": "sensitive_data", "status": "FAIL" if e else "PASS", "details": e,
+            "summary": "Şifre/PIN/OTP değerleri koda ve feature'a yazılmıyor; anahtarlar güvenli sağlayıcı ile çözülüyor"
+            + (f" ({cfg.secretHelperClass}: ortam değişkeni → -D, eksikse hata)." if cfg.secretProvider == "HELPER" else " (özel sağlayıcı).")}
 
 
 async def validate_pom(files, cfg: PomConfig, classes: dict) -> dict:
+    original = files
+    files = expand_snippets(files, cfg, classes)
     feat, coll = check_feature(files, cfg)
-    checks = [check_structure(files, cfg, classes), feat, coll, check_class_conflicts(files, cfg), await check_syntax(files, cfg),
+    checks = [check_structure(files, cfg, classes), feat, coll, check_class_conflicts(original, cfg), check_sensitive(files, cfg),
+              await check_syntax(files, cfg),
               {"id": "framework_compile", "status": "NOT_VERIFIED", "details": [],
                "summary": "Kurum içi framework bağımlılıkları bu ortamda erişilebilir değil; gerçek framework'e karşı derleme doğrulanmadı. "
                           "Projenizde mvn test-compile çalıştırın."}]
@@ -238,4 +326,4 @@ async def validate_pom(files, cfg: PomConfig, classes: dict) -> dict:
         status = "NOT_VERIFIED"
     else:
         status = "STRUCTURE_VERIFIED"
-    return {"status": status, "contentHash": content_hash(files), "checks": checks}
+    return {"status": status, "contentHash": content_hash(original), "checks": checks}

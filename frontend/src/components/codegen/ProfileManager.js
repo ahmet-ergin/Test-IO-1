@@ -21,7 +21,7 @@ export const ProfileManager = ({ profileKey, cfg, store, onSelect }) => {
   };
 
   const exportProfile = () => {
-    const data = { format: FORMAT, version: 1, name: store.nameOf(profileKey).replace(/^Kullanıcı: /, ""), baseProfile: store.baseOf(profileKey), config: cfg };
+    const data = { format: FORMAT, version: 1, profileType: "CUCUMBER_POM", name: store.nameOf(profileKey).replace(/^Kullanıcı: /, ""), baseProfile: store.baseOf(profileKey), config: cfg };
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
     a.download = `${data.name.replace(/[^\w-]+/g, "_") || "profil"}.amts-profile.json`;
@@ -34,7 +34,9 @@ export const ProfileManager = ({ profileKey, cfg, store, onSelect }) => {
     if (!file) return;
     try {
       const data = JSON.parse(await file.text());
-      if (data.format !== FORMAT || typeof data.config !== "object" || !data.name) throw new Error("format");
+      if (data.format !== FORMAT || !data.config || typeof data.config !== "object" || Array.isArray(data.config) || !data.name) throw new Error("format");
+      if ((data.version || 1) > 1) { toast.error("Bu profil dosyası daha yeni bir AMTS sürümüyle oluşturulmuş"); return; }
+      if (data.profileType && data.profileType !== "CUCUMBER_POM") { toast.error("Yalnızca Cucumber + POM profilleri içe aktarılabilir"); return; }
       onSelect(store.addUser(`${data.name}`.slice(0, 60), data.baseProfile || "GENERIC", data.config));
       toast.success(`'${data.name}' profili içe aktarıldı`);
     } catch { toast.error("Geçersiz profil dosyası (AMTS profil JSON'u bekleniyor)"); }

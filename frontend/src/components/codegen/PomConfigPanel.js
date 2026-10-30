@@ -95,7 +95,11 @@ export const PomConfigPanel = ({ cfg, onChange, derived }) => {
           <div className="grid grid-cols-3 gap-2">{["TAP", "INPUT_TEXT", "LONG_PRESS", "SCROLL", "BACK"].map((k) => <Text key={k} {...p} path={`verbs.${k}`} label={`Fiil: ${k}`} />)}</div>
         </Section>
         <Section value="data" title="Hassas veri & çakışma">
-          <Text {...p} path="secretValueTemplate" label="Gizli değer çözümleme" hint="{key} feature'daki anahtar adıyla değiştirilir." />
+          <Choice {...p} path="secretProvider" label="Şifre/PIN/OTP çözümleme" options={[["HELPER", "Üretilen yardımcı sınıf (ortam değişkeni → -D, eksikse hata)"], ["CUSTOM", "Özel sağlayıcı ifadesi"]]} />
+          {cfg.secretProvider === "HELPER" ? <div className="grid grid-cols-2 gap-3">
+            <Text {...p} path="secretHelperClass" label="Yardımcı sınıf adı" />
+            <Text {...p} path="secretHelperPackage" label="Yardımcı paketi" placeholder="boş = step paketi" />
+          </div> : <Text {...p} path="secretValueTemplate" label="Özel sağlayıcı ifadesi" hint="{key} feature'daki anahtar adıyla değiştirilir; eksik değer için hata vermesi sağlayıcının sorumluluğundadır." />}
           <Text {...p} path="secretKeyPrefix" label="Anahtar ön eki" />
           <Field label="Mevcut Cucumber adım ifadeleri (satır başına bir)" hint="Örn: {string} butonuna tıklar">
             <Textarea data-testid="cg-pom-existingStepTexts" rows={4} className="font-mono text-xs" value={(cfg.existingStepTexts || []).join("\n")}
@@ -104,6 +108,10 @@ export const PomConfigPanel = ({ cfg, onChange, derived }) => {
           <Field label="Projemdeki mevcut sınıf adları (satır başına bir, tam ad veya kısa ad)" hint="Üretilen sınıf adı eşleşirse uyarı verilir; kaynak kod gerekmez.">
             <Textarea data-testid="cg-existingClassNames" rows={3} className="font-mono text-xs" value={(cfg.existingClassNames || []).join("\n")}
               onChange={(e) => onChange(setIn(cfg, "existingClassNames", e.target.value.split("\n")))} />
+          </Field>
+          <Field label="Mevcut Page Interface metotları (satır başına bir)" hint="Biçim: IDeneme3Page: void clickTransferButton() — interface ve imza birebir eşleşirse metot yeniden üretilmez.">
+            <Textarea data-testid="cg-existingPageMethods" rows={3} className="font-mono text-xs" value={(cfg.existingPageMethods || []).join("\n")}
+              onChange={(e) => onChange(setIn(cfg, "existingPageMethods", e.target.value.split("\n")))} />
           </Field>
         </Section>
       </Accordion>

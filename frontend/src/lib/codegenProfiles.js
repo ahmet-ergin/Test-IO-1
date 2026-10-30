@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { http } from "@/lib/api";
 
 // Built-in profile definitions live in the backend code (GET /codegen/pom/profiles); only user edits are kept in the browser.
@@ -9,6 +10,9 @@ const GAUGE_STORAGE = "amts.codegen.config.v1";
 
 export const merge = (def, saved) => Object.fromEntries(Object.entries(def).map(([k, v]) => [k,
   v && typeof v === "object" && !Array.isArray(v) ? merge(v, saved?.[k] || {}) : (saved?.[k] !== undefined ? saved[k] : v)]));
+const write = (key, value) => {
+  try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { toast.error("Ayarlar tarayıcıya kaydedilemedi (depolama dolu veya engelli)"); return false; }
+};
 const read = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
 
 export const initialProfile = () => {
@@ -26,8 +30,11 @@ export const describe = (key) => {
 export const useProfiles = () => {
   const [builtins, setBuiltins] = useState(null);
   const [users, setUsers] = useState(() => read(USER_KEY, []));
-  useEffect(() => { http.get("/codegen/pom/profiles").then((r) => setBuiltins(r.data)).catch(() => setBuiltins([])); }, []);
-  const saveUsers = (list) => { setUsers(list); localStorage.setItem(USER_KEY, JSON.stringify(list)); };
+  useEffect(() => {
+    http.get("/codegen/pom/profiles").then((r) => setBuiltins(r.data))
+      .catch(() => { setBuiltins([]); toast.error("Yerleşik kod profilleri yüklenemedi; sayfayı yenileyin."); });
+  }, []);
+  const saveUsers = (list) => { setUsers(list); write(USER_KEY, list); };
 
   const options = [["GAUGE", "Gauge + Appium 2"], ...(builtins || []).map((p) => [`POM:${p.id}`, p.name]),
     ...users.map((u) => [`POM:user:${u.id}`, `Kullanıcı: ${u.name}`])];
@@ -53,9 +60,9 @@ export const useProfiles = () => {
 
   const saveCfg = (key, cfg) => {
     const d = describe(key);
-    if (d.kind === "GAUGE") localStorage.setItem(GAUGE_STORAGE, JSON.stringify(cfg));
+    if (d.kind === "GAUGE") write(GAUGE_STORAGE, cfg);
     else if (d.userId) saveUsers(users.map((u) => (u.id === d.userId ? { ...u, config: cfg } : u)));
-    else localStorage.setItem(POM_STORAGE[d.builtinId] || `amts.codegen.pom.${d.builtinId}.v1`, JSON.stringify(cfg));
+    else write(POM_STORAGE[d.builtinId] || `amts.codegen.pom.${d.builtinId}.v1`, cfg);
   };
 
   const clearCfg = (key, defaults) => {
@@ -67,7 +74,11 @@ export const useProfiles = () => {
 
   const addUser = (name, baseProfile, config) => {
     const id = Math.random().toString(36).slice(2, 10);
-    saveUsers([...users, { id, name, baseProfile, config }]);
+    const taken = new Set([...users.map((u) => u.name), ...(builtins || []).map((b) => b.name)]);
+    let unique = name, i = 2;
+    while (taken.has(unique)) unique = `${name} (${i++})`;
+    const base = (builtins || []).some((b) => b.id === baseProfile) ? baseProfile : "GENERIC";
+    saveUsers([...users, { id, name: unique, baseProfile: base, config }]);
     return `POM:user:${id}`;
   };
   const removeUser = (id) => saveUsers(users.filter((u) => u.id !== id));

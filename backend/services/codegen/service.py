@@ -9,7 +9,7 @@ from services.codegen import render
 from services.codegen.validate import validate_files
 
 MAX_FILES, MAX_BYTES = 20, 1_000_000
-_SAFE_PATH = re.compile(r"^[A-Za-z0-9_\-]+(/[A-Za-z0-9_\-.]+)*\.(java|spec|md|feature)$")
+_SAFE_PATH = re.compile(r"^[A-Za-z0-9_\-]+(/[A-Za-z0-9_\-.]+)*\.(java|spec|md|feature|txt)$")
 
 
 async def generate(session_id: str, cfg: CodegenConfig) -> dict:
@@ -40,13 +40,26 @@ def check_files(files: list):
         raise AppError("CODEGEN_PATH_INVALID", f"Geçersiz veya tekrar eden dosya yolu: {', '.join(bad) or 'tekrar'}", 422)
 
 
+def report_safe(validation: dict) -> dict:
+    """Compiler output echoes source lines; reports keep only 'file:line: message' with string literals masked."""
+    checks = []
+    for c in validation["checks"]:
+        details = c["details"]
+        if c["id"] in ("javac", "java_syntax"):
+            details = [re.sub(r'"(?:[^"\\]|\\.)*"', '"…"', d) for d in details if re.match(r"^[\w/.\-]+:\d+: ", d)]
+        checks.append({**c, "details": details})
+    return {**validation, "checks": checks}
+
+
 def build_zip(files: list, validation: dict, session_name: str) -> bytes:
     buf = io.BytesIO()
+    validation = report_safe(validation)
     status_tr = {"VERIFIED": "DOĞRULANDI", "FAILED": "BAŞARISIZ", "NOT_VERIFIED": "DOĞRULANMADI",
                  "STRUCTURE_VERIFIED": "YAPISAL OLARAK DOĞRULANDI (framework derlemesi doğrulanmadı)"}[validation["status"]]
+    report_note = "Hassas veriler (şifre/PIN/OTP) bu rapora ve dosyalara yazılmaz; derleyici çıktısında kaynak satırları ve metin sabitleri gizlenir."
     report = [f"# AMTS doğrulama raporu — {session_name}", "", f"Durum: **{status_tr}** ({validation['status']})",
               f"İçerik özeti (sha256): `{validation['contentHash']}`", "",
-              "Bu rapor ZIP içindeki dosyaların tam olarak bu hâli için sunucuda üretildi.", ""]
+              "Bu rapor ZIP içindeki dosyaların tam olarak bu hâli için sunucuda üretildi.", report_note, ""]
     for c in validation["checks"]:
         report += [f"## {c['id']}: {c['status']}", c["summary"], *[f"- {d}" for d in c["details"]], ""]
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:

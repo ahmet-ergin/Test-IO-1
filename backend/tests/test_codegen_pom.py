@@ -26,7 +26,7 @@ def test_pom_three_layers_structure_verified(client, token):
     assert v["status"] == "STRUCTURE_VERIFIED", v
     assert {c["id"]: c["status"] for c in v["checks"]}["framework_compile"] == "NOT_VERIFIED"
     f = _files(res)
-    assert set(f) == {"feature", "steps", "contract", "android", "readme"}
+    assert set(f) == {"feature", "steps", "contract", "android", "secrets", "readme"}
     st, ct, an, feat = f["steps"]["content"], f["contract"]["content"], f["android"]["content"], f["feature"]["content"]
     assert f["steps"]["path"] == "src/test/java/com/example/mobile/tests/Deneme3Steps.java"
     assert "public class Deneme3Steps extends BaseTest" in st and "private IDeneme3Page deneme3Page;" in st
@@ -38,7 +38,7 @@ def test_pom_three_layers_structure_verified(client, token):
     assert '@FindBy(id = "com.amts.sampleapp:id/transferButton")\n    private IMobileElement transferButton;' in an
     assert "mobileApp.longPressOnElement(longPressButton);" in an and "mobileApp.swipeUp();" in an
     assert "pinInput.clear();" in an and "pinInput.sendKeys(value);" in an and "mobileApp.navigateToBack();" in an
-    assert 'deneme3Page.typePinInput(System.getenv(key));' in st
+    assert 'deneme3Page.typePinInput(AmtsSecureData.require(key));' in st
     assert "# language: tr" in feat and 'Ve pinInput alanına "AMTS_PIN_INPUT" anahtarlı gizli test verisini yazar' in feat
     assert "Ve geri tuşuna basar" in feat and "Ve ekranı aşağı kaydırır" in feat
     assert "// Alternatif locator'lar (bilgi amaçlı):" in an and "// <amts:members>" in an

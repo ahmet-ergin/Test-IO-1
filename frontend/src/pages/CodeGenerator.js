@@ -18,7 +18,8 @@ import { useProfiles, describe, initialProfile, PROFILE_KEY } from "@/lib/codege
 const POM_NOTE = "Paket/import/sınıf ilişkileri ve Java sözdizimi javac ile, kurum içi framework sınıfları yerine yerel stub'lar kullanılarak derlenir. "
   + "Framework metot imzaları (şablonlarınız) doğrulanamaz; gerçek derleme için projenizde mvn test-compile çalıştırın.";
 const cleanCfg = (c) => ({ ...c, existingStepTexts: (c.existingStepTexts || []).filter((x) => x.trim()),
-  ...(c.existingClassNames ? { existingClassNames: c.existingClassNames.filter((x) => x.trim()) } : {}) });
+  ...(c.existingClassNames ? { existingClassNames: c.existingClassNames.filter((x) => x.trim()) } : {}),
+  ...(c.existingPageMethods ? { existingPageMethods: c.existingPageMethods.filter((x) => x.trim()) } : {}) });
 const tid = (k) => k.replace(/:/g, "-");
 
 const ProfilePicker = ({ value, options, onChange }) => (
@@ -78,7 +79,8 @@ export default function CodeGenerator() {
     } else if (store.builtins) {
       const d = store.defaultsFor(profile);
       if (d) setCfg(store.loadCfg(profile, d));
-      else changeProfile("POM:GENERIC");
+      else if (store.builtins.length) changeProfile("POM:GENERIC");
+      else changeProfile("GAUGE");
     }
     return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -180,7 +182,7 @@ export default function CodeGenerator() {
               </TabsList>
               <TabsContent value="review"><Panel testId="cg-review-panel"><div className="p-4">
                 {plan?.classConflicts?.length > 0 && <div data-testid="cg-class-conflicts" className="mb-3 rounded border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-500">
-                  Projenizde aynı adlı sınıf var: {plan.classConflicts.join(", ")}. Dosyaların üzerine yazmayın; "Üyeleri kopyala" ile mevcut sınıflara ekleyin.</div>}
+                  Projenizde mevcut sınıflar: {plan.classConflicts.join(", ")}. Bu sınıflar için tam dosya yerine yalnızca eklenecek parça (.amts-members.txt) üretilir; otomatik birleştirme yapılmaz.</div>}
                 {plan ? <PlanReview plan={plan} /> : planError
                   ? <div data-testid="cg-plan-error" className="rounded border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-500">
                       Yapılandırma hatası: {planError}

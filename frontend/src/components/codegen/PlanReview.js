@@ -3,7 +3,7 @@ import { Tag } from "@/components/common";
 
 const STATUS = {
   OK: ["green", "HAZIR", CheckCircle2], WARNING: ["amber", "UYARI", AlertTriangle], UNSUPPORTED: ["red", "DESTEKLENMİYOR", Ban],
-  MANUAL: ["amber", "MANUEL UYARLAMA GEREKLİ", AlertTriangle],
+  MANUAL: ["amber", "MANUEL UYARLAMA GEREKLİ", AlertTriangle], REUSED: ["blue", "YENİDEN KULLANILDI", CheckCircle2],
 };
 const LEVEL = { error: "text-red-500", warning: "text-amber-500", info: "text-muted-foreground" };
 

@@ -71,9 +71,9 @@ def test_pom_generate_structure_verified(sid):
     assert check(v, "framework_compile")["status"] == "NOT_VERIFIED"
     assert check(v, "java_syntax")["status"] == "PASS"
     roles = [f["role"] for f in res["files"]]
-    assert roles == ["feature", "steps", "contract", "android", "readme"]
+    assert [r for r in roles if r != "secrets"] == ["feature", "steps", "contract", "android", "readme"]
     for f in res["files"]:
-        if f["language"] == "java":
+        if f["language"] == "java" and f["role"] != "secrets":
             assert f["path"].startswith("src/test/java/")
             assert "// <amts:members>" in f["content"] and "// </amts:members>" in f["content"]
     assert role(res, "feature")["path"].startswith("src/test/resources/features/")
@@ -94,7 +94,7 @@ def test_pom_d3_layers(d3):
 def test_pom_input_secret(tmp_path):
     res = gen(INPUT)
     st, an, feat = role(res, "steps")["content"], role(res, "android")["content"], role(res, "feature")["content"]
-    assert "System.getenv(key)" in st
+    assert "AmtsSecureData.require(key)" in st
     assert ".sendKeys(" in an and ".clear();" in an
     assert "AMTS_" in feat
     assert "•" not in st + an + feat  # mask char must not leak

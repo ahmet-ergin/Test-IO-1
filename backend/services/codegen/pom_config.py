@@ -9,6 +9,20 @@ _PATH_RE = re.compile(r"^[A-Za-z0-9_\-]+(/[A-Za-z0-9_\-.]+)*$")
 _PLACEHOLDER = re.compile(r"\{(\w+)\}")
 LOCATOR_STRATEGIES = ["RESOURCE_ID", "ACCESSIBILITY_ID", "XPATH", "UIAUTOMATOR"]
 ACTION_KEYS = ["TAP", "INPUT_TEXT", "LONG_PRESS", "SCROLL_DOWN", "SCROLL_UP", "SCROLL_LEFT", "SCROLL_RIGHT", "BACK"]
+_PM_RE = re.compile(r"^\s*([A-Za-z_][\w.]*)\s*[:#]\s*(?:public\s+)?(?:abstract\s+)?([\w.<>\[\], ]+?)\s+([A-Za-z_]\w*)\s*\(([^)]*)\)\s*;?\s*$")
+
+
+def parse_page_method(line: str):
+    """'IDeneme3Page: void typePin(String value)' -> {iface, ret, name, params:[types]} (param names are ignored)."""
+    m = _PM_RE.match(line or "")
+    if not m:
+        return None
+    params = []
+    for p in (x.strip() for x in m.group(4).split(",") if x.strip()):
+        parts = re.sub(r"\bfinal\s+", "", p).split()
+        params.append(parts[0] if parts else p)
+    return {"iface": m.group(1).rsplit(".", 1)[-1], "ifaceFq": m.group(1), "ret": m.group(2).replace(" ", ""), "name": m.group(3),
+            "params": params}
 
 
 class LocatorTemplates(BaseModel):
@@ -79,6 +93,18 @@ class PomConfig(BaseModel):
     stepMethodNaming: Literal["PAGE_METHOD", "STEP_TEXT"] = "PAGE_METHOD"
     existingClassNames: List[str] = Field(default_factory=list, max_length=5000)
     scrollManualHint: str = ""
+    secretProvider: Literal["HELPER", "CUSTOM"] = "HELPER"
+    secretHelperClass: str = "AmtsSecureData"
+    secretHelperPackage: str = ""
+    existingPageMethods: List[str] = Field(default_factory=list, max_length=5000)
+
+    def helper_fqcn(self) -> str:
+        return f"{self.secretHelperPackage or self.stepsPackage}.{self.secretHelperClass}"
+
+    def secret_call(self, arg: str) -> str:
+        if self.secretProvider == "HELPER":
+            return f"{self.secretHelperClass}.require({arg})"
+        return self.secretValueTemplate.replace("{key}", arg)
 
     @model_validator(mode="after")
     def _check(self):
@@ -110,6 +136,13 @@ class PomConfig(BaseModel):
         bad_s = set(self.unverifiedLocatorStrategies) - set(LOCATOR_STRATEGIES)
         if bad_s:
             e.append(f"unverifiedLocatorStrategies bilinmeyen strateji içeriyor: {', '.join(sorted(bad_s))}.")
+        if not is_ident(self.secretHelperClass):
+            e.append("secretHelperClass geçerli bir Java sınıf adı olmalı.")
+        if self.secretHelperPackage and not is_package(self.secretHelperPackage):
+            e.append("secretHelperPackage boş ya da geçerli bir paket adı olmalı.")
+        for ln in self.existingPageMethods:
+            if ln.strip() and not parse_page_method(ln):
+                e.append(f"Mevcut Page metodu satırı anlaşılamadı: '{ln.strip()[:80]}'. Biçim: IDeneme3Page: void clickTransferButton()")
         for k, v in self.actionTemplates.model_dump().items():
             bad_lines = [ln for ln in v.split("\n") if ln.strip() and not ln.rstrip().endswith((";", "{", "}"))]
             if bad_lines:
