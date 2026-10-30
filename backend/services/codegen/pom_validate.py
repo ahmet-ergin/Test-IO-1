@@ -34,21 +34,37 @@ def feature_steps(content: str):
             if not ln.strip().startswith("#") and (m := re.match(rf"^\s*{GHERKIN_KW}\s+(.+)$", ln))]
 
 
+def _matcher(text: str, style: str):
+    if style != "REGEX":
+        return cucumber_regex(text), len(re.findall(r"\{\w*\}", text))
+    try:
+        rx = re.compile(text)
+    except re.error:
+        return None, 0
+    return rx, rx.groups
+
+
 def check_feature(files, cfg: PomConfig):
+    style = cfg.stepTextStyle
     defs = [d for f in files if f["path"].endswith(".java") for d in step_defs(f["content"], simple(cfg.stepAnnotation))]
     errors, seen = [], {}
     for d in defs:
         if d["text"] in seen:
             errors.append(f"Aynı Cucumber ifadesi iki metotta: '{d['text']}' ({seen[d['text']]}, {d['method']})")
         seen[d["text"]] = d["method"]
-        if d["params"] != len(re.findall(r"\{\w*\}", d["text"])):
-            errors.append(f"{d['method']}: parametre sayısı Cucumber ifadesindeki parametrelerle eşleşmiyor.")
+        d["rx"], groups = _matcher(d["text"], style)
+        if d["rx"] is None:
+            errors.append(f"{d['method']}: geçersiz regex '{d['text']}'.")
+        elif d["params"] != groups:
+            errors.append(f"{d['method']}: parametre sayısı ({d['params']}) step ifadesindeki parametrelerle ({groups}) eşleşmiyor.")
+        if style == "REGEX" and d["rx"] is not None and not (d["text"].startswith("^") and d["text"].endswith("$")):
+            errors.append(f"{d['method']}: regex ifadesi ^ ile başlamalı ve $ ile bitmeli.")
     feats = [f for f in files if f["path"].endswith(".feature")]
     used, total = set(), 0
     for f in feats:
         for line, text in feature_steps(f["content"]):
             total += 1
-            hits = [d for d in defs if cucumber_regex(d["text"]).match(text)]
+            hits = [d for d in defs if d["rx"] is not None and d["rx"].fullmatch(text)]
             if len(hits) != 1:
                 errors.append(f"{f['path']}:{line} — '{text}' için {len(hits)} step definition eşleşti (1 olmalı).")
             used |= {h["text"] for h in hits}
@@ -58,7 +74,10 @@ def check_feature(files, cfg: PomConfig):
     coll = [d["text"] for d in defs if d["text"] in existing]
     for f in feats:
         for _, text in feature_steps(f["content"]):
-            coll += [f"'{text}' mevcut '{e}' ifadesiyle de eşleşir (belirsiz adım)" for e in existing if cucumber_regex(e).match(text)]
+            for ex in existing:
+                rx, _ = _matcher(ex, style)
+                if rx is not None and rx.fullmatch(text):
+                    coll.append(f"'{text}' mevcut '{ex}' ifadesiyle de eşleşir (belirsiz adım)")
     summary = f"{total} feature adımı, {len(defs)} @{simple(cfg.stepAnnotation)} tanımı" if feats else \
         f".feature üretilmedi; {len(defs)} @{simple(cfg.stepAnnotation)} tanımı yalnızca tekrar/parametre açısından kontrol edildi"
     return ({"id": "feature_match", "status": "FAIL" if errors else "PASS", "summary": summary, "details": errors[:50]},
@@ -167,7 +186,7 @@ def pom_stubs(cfg: PomConfig, defined: set) -> dict:
         app_cls: f"package {STUB_PKG};\n\npublic class AmtsAppStub {{\n    " + "\n    ".join(f"public void {m}(Object... args) {{ }}" for m in app_methods) + "\n}\n",
         cfg.elementType: f"package {pkg_of(cfg.elementType)};\n\npublic interface {simple(cfg.elementType)} {{\n    "
                          + "\n    ".join(f"void {m}(Object... args);" for m in el_methods) + "\n}\n",
-        cfg.locatorAnnotation: _annotation(cfg.locatorAnnotation, "FIELD", _attrs(cfg.locatorTemplates.model_dump().values())),
+        cfg.locatorAnnotation: _annotation(cfg.locatorAnnotation, "FIELD", _attrs([*cfg.locatorTemplates.model_dump().values(), cfg.findByExtraArgs])),
         cfg.pageModelAnnotation: _annotation(cfg.pageModelAnnotation, "TYPE", _attrs([cfg.pageModelArgs])),
     }
     if cfg.pageFieldAnnotation:
@@ -194,9 +213,22 @@ async def check_syntax(files, cfg: PomConfig):
             "details": [] if ok else r["lines"][:40]}
 
 
+def check_class_conflicts(files, cfg: PomConfig):
+    existing = {x.strip() for x in cfg.existingClassNames if x.strip()}
+    out = []
+    for fq in sorted(defined_classes([f for f in files if f["path"].endswith(".java")])):
+        if fq in existing:
+            out.append(f"{fq} projenizde zaten var; dosyanın üzerine yazmayın — 'Üyeleri kopyala' ile mevcut sınıfa ekleyin.")
+        elif simple(fq) in existing:
+            out.append(f"'{simple(fq)}' adlı bir sınıf projenizde var (paket belirtilmedi); {fq} ile karıştırılmadığından emin olun.")
+    return {"id": "class_collisions", "status": "WARN" if out else "PASS",
+            "summary": f"{len(existing)} mevcut sınıf adıyla karşılaştırıldı" if existing else "Mevcut sınıf adı girilmedi",
+            "details": out}
+
+
 async def validate_pom(files, cfg: PomConfig, classes: dict) -> dict:
     feat, coll = check_feature(files, cfg)
-    checks = [check_structure(files, cfg, classes), feat, coll, await check_syntax(files, cfg),
+    checks = [check_structure(files, cfg, classes), feat, coll, check_class_conflicts(files, cfg), await check_syntax(files, cfg),
               {"id": "framework_compile", "status": "NOT_VERIFIED", "details": [],
                "summary": "Kurum içi framework bağımlılıkları bu ortamda erişilebilir değil; gerçek framework'e karşı derleme doğrulanmadı. "
                           "Projenizde mvn test-compile çalıştırın."}]

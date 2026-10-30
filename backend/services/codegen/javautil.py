@@ -77,6 +77,36 @@ def _utf16(ch: str):
     return [int.from_bytes(b[i:i + 2], "big") for i in range(0, len(b), 2)]
 
 
+def fill_template_value(tpl: str, value: str, ascii_only: bool = False) -> str:
+    """Puts value into a template exactly once-quoted: inside an existing "..." literal only the escaped content is inserted
+    (and a literal prefix like id= right before {value} is not repeated); outside quotes a full Java literal is inserted."""
+    out, in_str, cur, i = [], False, "", 0
+    while i < len(tpl):
+        if tpl.startswith("{value}", i):
+            if in_str:
+                m = re.search(r"([A-Za-z]\w*=)$", cur)
+                v = value[len(m.group(1)):] if m and value.startswith(m.group(1)) else value
+                out.append(java_str(v, ascii_only)[1:-1])
+                cur += v
+            else:
+                out.append(java_str(value, ascii_only))
+            i += len("{value}")
+            continue
+        ch = tpl[i]
+        if ch == "\\" and in_str:
+            out.append(tpl[i:i + 2])
+            cur += tpl[i:i + 2]
+            i += 2
+            continue
+        if ch == '"':
+            in_str, cur = not in_str, ""
+        elif in_str:
+            cur += ch
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
 def comment_safe(s: str) -> str:
     """Text for a // comment: single line, backslashes doubled so no \\u escape can form."""
     s = re.sub(r"[\r\n\u2028\u2029\x00-\x1f]+", " ", s or "")

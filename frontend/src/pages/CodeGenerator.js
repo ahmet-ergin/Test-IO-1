@@ -12,23 +12,19 @@ import { PomConfigPanel } from "@/components/codegen/PomConfigPanel";
 import { PlanReview } from "@/components/codegen/PlanReview";
 import { CodePreview } from "@/components/codegen/CodePreview";
 import { ValidationPanel } from "@/components/codegen/ValidationPanel";
+import { ProfileManager } from "@/components/codegen/ProfileManager";
+import { useProfiles, describe, initialProfile, PROFILE_KEY } from "@/lib/codegenProfiles";
 
-const PROFILES = {
-  GAUGE: { base: "/codegen", storage: "amts.codegen.config.v1", label: "Gauge + Appium 2" },
-  CUCUMBER_POM: { base: "/codegen/pom", storage: "amts.codegen.pom.config.v1", label: "Cucumber + POM (yapılandırılabilir)" },
-};
-const PROFILE_KEY = "amts.codegen.profile";
 const POM_NOTE = "Paket/import/sınıf ilişkileri ve Java sözdizimi javac ile, kurum içi framework sınıfları yerine yerel stub'lar kullanılarak derlenir. "
   + "Framework metot imzaları (şablonlarınız) doğrulanamaz; gerçek derleme için projenizde mvn test-compile çalıştırın.";
-const cleanCfg = (c) => ({ ...c, existingStepTexts: (c.existingStepTexts || []).filter((x) => x.trim()) });
-const merge = (def, saved) => Object.fromEntries(Object.entries(def).map(([k, v]) => [k,
-  v && typeof v === "object" && !Array.isArray(v) ? merge(v, saved?.[k] || {}) : (saved?.[k] !== undefined ? saved[k] : v)]));
-const loadSaved = (key) => { try { return JSON.parse(localStorage.getItem(key) || "{}"); } catch { return {}; } };
+const cleanCfg = (c) => ({ ...c, existingStepTexts: (c.existingStepTexts || []).filter((x) => x.trim()),
+  ...(c.existingClassNames ? { existingClassNames: c.existingClassNames.filter((x) => x.trim()) } : {}) });
+const tid = (k) => k.replace(/:/g, "-");
 
-const ProfilePicker = ({ value, onChange }) => (
-  <Select value={value} onValueChange={onChange}>
-    <SelectTrigger data-testid="cg-profile-select" className="h-9 w-[270px] text-sm"><SelectValue /></SelectTrigger>
-    <SelectContent>{Object.entries(PROFILES).map(([k, p]) => <SelectItem key={k} value={k} data-testid={`cg-profile-opt-${k}`}>{p.label}</SelectItem>)}</SelectContent>
+const ProfilePicker = ({ value, options, onChange }) => (
+  <Select value={options.some(([k]) => k === value) ? value : undefined} onValueChange={onChange}>
+    <SelectTrigger data-testid="cg-profile-select" className="h-9 w-[300px] text-sm"><SelectValue placeholder="Profil yükleniyor…" /></SelectTrigger>
+    <SelectContent>{options.map(([k, label]) => <SelectItem key={k} value={k} data-testid={`cg-profile-opt-${tid(k)}`}>{label}</SelectItem>)}</SelectContent>
   </Select>
 );
 
@@ -63,8 +59,9 @@ export default function CodeGenerator() {
   const [stale, setStale] = useState(false);
   const [busy, setBusy] = useState("");
   const [tab, setTab] = useState("review");
-  const [profile, setProfile] = useState(() => (PROFILES[localStorage.getItem(PROFILE_KEY)] ? localStorage.getItem(PROFILE_KEY) : "GAUGE"));
-  const P = PROFILES[profile];
+  const [profile, setProfile] = useState(initialProfile);
+  const store = useProfiles();
+  const P = describe(profile);
 
   useEffect(() => {
     http.get("/codegen/sessions").then((r) => {
@@ -76,16 +73,26 @@ export default function CodeGenerator() {
   useEffect(() => {
     setCfg(null); setPlan(null); setPlanError(null); setFiles([]); setOriginal([]); setValidation(null); setStale(false); setTab("review");
     let live = true;
-    http.get(`${P.base}/defaults`).then((r) => { if (live) setCfg(merge(r.data, loadSaved(P.storage))); }).catch((e) => toast.error(errMsg(e)));
+    if (P.kind === "GAUGE") {
+      http.get("/codegen/defaults").then((r) => { if (live) setCfg(store.loadCfg(profile, r.data)); }).catch((e) => toast.error(errMsg(e)));
+    } else if (store.builtins) {
+      const d = store.defaultsFor(profile);
+      if (d) setCfg(store.loadCfg(profile, d));
+      else changeProfile("POM:GENERIC");
+    }
     return () => { live = false; };
-  }, [P.base, P.storage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, store.builtins]);
 
-  const changeProfile = (p) => { if (p === profile) return; localStorage.setItem(PROFILE_KEY, p); setCfg(null); setPlan(null); setPlanStale(false); setFiles([]); setOriginal([]); setValidation(null); setProfile(p); };
-  const updateCfg = (c) => { setCfg(c); setPlanStale(true); if (files.length) setStale(true); localStorage.setItem(P.storage, JSON.stringify(c)); };
+  function changeProfile(p) {
+    if (p === profile) return;
+    localStorage.setItem(PROFILE_KEY, p); setCfg(null); setPlan(null); setPlanStale(false); setFiles([]); setOriginal([]); setValidation(null); setProfile(p);
+  }
+  const updateCfg = (c) => { setCfg(c); setPlanStale(true); if (files.length) setStale(true); store.saveCfg(profile, c); };
   const resetCfg = async () => {
     try {
-      const { data } = await http.get(`${P.base}/defaults`);
-      localStorage.removeItem(P.storage);
+      const data = P.kind === "GAUGE" ? (await http.get("/codegen/defaults")).data : store.defaultsFor(profile);
+      store.clearCfg(profile, data);
       setCfg(data); setPlanError(null); setPlanStale(true);
       if (files.length) setStale(true); else setPlan(null);
     } catch (e) { toast.error(errMsg(e)); }
@@ -150,7 +157,7 @@ export default function CodeGenerator() {
     <div data-testid="code-generator-page">
       <PageHeader title="Kod Üreteci" sub={profile === "GAUGE" ? "Kayıtlı oturumdan mevcut Java + Appium 2 + Gauge framework'ünüze eklenecek .spec ve step dosyaları üretin."
         : "Kayıtlı oturumdan mevcut Cucumber + Page Object projenize eklenecek Step Definition, Page Interface, Android Page ve Türkçe .feature üretin."}>
-        <ProfilePicker value={profile} onChange={changeProfile} />
+        <ProfilePicker value={profile} options={store.options} onChange={changeProfile} />
         <SessionPicker sessions={sessions} value={sessionId} onChange={pick} />
         <Button data-testid="cg-review-btn" variant="outline" size="sm" disabled={!sessionId || !!busy} onClick={review}>
           {busy === "plan" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}Adımları incele</Button>
@@ -161,7 +168,8 @@ export default function CodeGenerator() {
         <div className="grid gap-4 xl:grid-cols-[360px_1fr]">
           <Panel title="Framework yapılandırması" testId="cg-config" right={<Button data-testid="cg-config-reset" size="sm" variant="ghost" className="h-6 text-[11px]" onClick={resetCfg}>Varsayılanlara dön</Button>}>
             <div className="px-4">{cfg && (profile === "GAUGE" ? <ConfigPanel cfg={cfg} onChange={updateCfg} derived={plan?.config} />
-              : <PomConfigPanel cfg={cfg} onChange={updateCfg} derived={plan?.config} />)}</div></Panel>
+              : <><ProfileManager profileKey={profile} cfg={cfg} store={store} onSelect={changeProfile} />
+                <PomConfigPanel cfg={cfg} onChange={updateCfg} derived={plan?.config} /></>)}</div></Panel>
           <div className="min-w-0 space-y-4">
             {planStale && plan && <div data-testid="cg-plan-stale" className="rounded border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-500">
               Yapılandırma değişti — güncel adım metinleri için "Adımları incele" veya "Kodu üret"e tıklayın.</div>}
@@ -171,6 +179,8 @@ export default function CodeGenerator() {
                 <TabsTrigger value="code" data-testid="cg-tab-code" disabled={!files.length}><Code2 className="mr-1.5 h-4 w-4" />2 · Önizleme & düzenleme</TabsTrigger>
               </TabsList>
               <TabsContent value="review"><Panel testId="cg-review-panel"><div className="p-4">
+                {plan?.classConflicts?.length > 0 && <div data-testid="cg-class-conflicts" className="mb-3 rounded border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-500">
+                  Projenizde aynı adlı sınıf var: {plan.classConflicts.join(", ")}. Dosyaların üzerine yazmayın; "Üyeleri kopyala" ile mevcut sınıflara ekleyin.</div>}
                 {plan ? <PlanReview plan={plan} /> : planError
                   ? <div data-testid="cg-plan-error" className="rounded border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-500">
                       Yapılandırma hatası: {planError}

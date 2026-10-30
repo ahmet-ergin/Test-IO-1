@@ -1,6 +1,8 @@
 """Plan for the Cucumber + POM profile: element fields, page methods and Turkish step texts (deduplicated)."""
+import re
 from services.export_service import build_export
-from services.codegen.javautil import java_str, jcamel as camel, jpascal as pascal, jconst as const, is_ident, comment_safe
+from services.codegen.javautil import java_str, jcamel as camel, jpascal as pascal, jconst as const, is_ident, comment_safe, \
+    fill_template_value, ascii_fold
 from services.codegen.planner import _sensitive, _label, _scroll_direction, _issue, MASK
 from services.codegen.pom_config import PomConfig, resolve_pom, LOCATOR_STRATEGIES, cucumber_text
 
@@ -15,7 +17,10 @@ def annotation_for(loc: dict, cfg: PomConfig):
     v = loc["value"]
     if loc["strategy"] == "RESOURCE_ID" and cfg.resourceIdFormat == "SHORT":
         v = v.split(":id/")[-1]
-    return f"@{cfg.locatorAnnotation.rsplit('.', 1)[-1]}({tpl.replace('{value}', java_str(v, cfg.asciiOnly))})"
+    args = fill_template_value(tpl, v, cfg.asciiOnly)
+    if cfg.findByExtraArgs.strip():
+        args += ", " + cfg.findByExtraArgs.strip()
+    return f"@{cfg.locatorAnnotation.rsplit('.', 1)[-1]}({args})"
 
 
 def _loc(loc: dict, cfg) -> dict:
@@ -47,6 +52,14 @@ def _choose(st: dict, cfg, issues: list):
     return chosen, [x for x in locs if x is not chosen]
 
 
+def step_expression(text: str, cfg: PomConfig) -> str:
+    """Cucumber annotation text; REGEX style anchors and escapes literal parts, {string} becomes a quoted capture group."""
+    if cfg.stepTextStyle != "REGEX":
+        return text
+    parts = [re.sub(r"([\\.\[\]{}()*+?^$|])", r"\\\1", p) for p in text.split("{string}")]
+    return "^" + '"([^"]*)"'.join(parts) + "$"
+
+
 def _field_name(ev: dict, label: str, taken: set) -> str:
     rid = ((ev.get("element") or {}).get("resourceId") or "").split("/")[-1]
     base = camel(rid) if rid else camel(label)
@@ -60,7 +73,7 @@ def _field_name(ev: dict, label: str, taken: set) -> str:
 def build_steps(doc: dict, cfg: PomConfig):
     events = {e["eventId"]: e for e in doc["events"]}
     elements, by_loc, methods, by_key, rows = [], {}, [], {}, []
-    texts = {}
+    texts, step_names = {}, set()
     for n, st in enumerate(doc["steps"], start=1):
         ev = events.get(st["eventId"]) or {}
         action = st.get("action") or ev.get("action") or "UNKNOWN"
@@ -79,15 +92,22 @@ def build_steps(doc: dict, cfg: PomConfig):
             issues.append(_issue("info", "SCREEN_LEVEL_SCROLL", "Kaydırma ekran seviyesinde şablonla üretildi; kaydedilen kap öğe kullanılmadı."))
         template = getattr(cfg.actionTemplates, template_key, None) if template_key in cfg.actionTemplates.model_fields else None
         supported = bool(template)
+        manual = action == "SCROLL" and template == ""
+        if manual:
+            issues.append(_issue("error", "MANUAL_ADAPTATION_REQUIRED", "MANUEL UYARLAMA GEREKLİ: " + (cfg.scrollManualHint or
+                                 f"{template_key} şablonu tanımlı değil; kaydırma için gereken hedef element/parametreler kayıtta yok, uydurulmadı.")))
         if action in ELEMENT_ACTIONS and not selected:
             supported = False
             issues.append(_issue("error", "NO_SUPPORTED_LOCATOR", "Yapılandırılan locator şablonlarıyla ifade edilebilen locator yok; rastgele locator üretilmedi."))
         if template is None:
             issues.append(_issue("error", "UNSUPPORTED_ACTION", f"{action} için bu profilde aksiyon şablonu yok. Metot üretildi ancak "
                                  "UnsupportedOperationException fırlatır."))
-        elif not template and supported is False and not any(i["code"] == "NO_SUPPORTED_LOCATOR" for i in issues):
+        elif not template and not manual and supported is False and not any(i["code"] == "NO_SUPPORTED_LOCATOR" for i in issues):
             issues.append(_issue("error", "ACTION_TEMPLATE_MISSING", f"{template_key} aksiyon şablonu boş; framework metodu uydurulmadı. "
                                  "Ayarlardan şablon tanımlayın."))
+        if selected and selected["strategy"] in cfg.unverifiedLocatorStrategies:
+            issues.append(_issue("warning", "LOCATOR_PREFIX_UNVERIFIED", f"{selected['strategy']} locator biçimi ({selected['javaExpr']}) "
+                                 "framework tarafından desteklendiği doğrulanmadı; projenizde kontrol edin."))
         if selected and selected.get("unique") is False:
             issues.append(_issue("warning", "AMBIGUOUS_LOCATOR", f"Seçili locator kayıt anında {selected.get('matchCount')} öğe ile eşleşti."))
         if selected and action in ELEMENT_ACTIONS:
@@ -118,7 +138,7 @@ def build_steps(doc: dict, cfg: PomConfig):
                 "INPUT_TEXT": f"{pre}{lbl} alanına {{string}} " + ("anahtarlı gizli test verisini yazar" if param and param["secret"] else "yazar")
                 }.get(action, f"{pre}{lbl} için {cucumber_text(action)} işlemini yapar")
         if not supported:
-            text += " - desteklenmiyor"
+            text += " - manuel uyarlama gerekli" if manual else " - desteklenmiyor"
         if mkey not in by_key:
             mname, i = (verb + target) or "perform", 2
             while any(m["name"] == mname for m in methods):
@@ -127,15 +147,23 @@ def build_steps(doc: dict, cfg: PomConfig):
             while t in texts:
                 t, j = f"{text} - {j}", j + 1
             texts[t] = mkey
-            by_key[mkey] = {"name": mname, "stepText": t, "action": action, "element": element, "template": template if supported else None,
-                            "param": param, "direction": direction, "supported": supported, "order": n,
+            smname = mname
+            if cfg.stepMethodNaming == "STEP_TEXT":
+                base = camel(ascii_fold(t.replace("{string}", " "))) or mname
+                base = base if not base[0].isdigit() else "adim" + base[:1].upper() + base[1:]
+                smname, k = base[:80], 2
+                while smname in step_names:
+                    smname, k = f"{base[:76]}{k}", k + 1
+            step_names.add(smname)
+            by_key[mkey] = {"name": mname, "stepMethod": smname, "featureText": t, "stepText": step_expression(t, cfg), "action": action, "element": element, "template": template if supported else None,
+                            "param": param, "direction": direction, "supported": supported, "manual": manual, "order": n,
                             "comment": comment_safe(f"{action} · {label}")}
             methods.append(by_key[mkey])
         m = by_key[mkey]
-        status = "UNSUPPORTED" if not supported else ("WARNING" if any(i["level"] == "warning" for i in issues) else "OK")
+        status = "MANUAL" if manual else "UNSUPPORTED" if not supported else ("WARNING" if any(i["level"] == "warning" for i in issues) else "OK")
         rows.append({"order": n, "stepId": st["stepId"], "name": st.get("name"), "action": action, "label": label, "sensitive": sensitive,
                      "selected": selected, "alternatives": alternatives, "supported": supported, "issues": issues, "status": status,
-                     "stepText": m["stepText"], "methodName": m["name"], "element": element, "params": [param] if param else []})
+                     "stepText": m["stepText"], "featureText": m["featureText"], "methodName": m["name"], "stepMethod": m["stepMethod"], "element": element, "params": [param] if param else []})
     return rows, elements, methods
 
 
@@ -148,4 +176,11 @@ async def build_pom_plan(session_id: str, cfg: PomConfig) -> dict:
     return {"session": {"id": doc["sessionId"], "name": doc.get("name"), "packageName": doc["application"]["packageName"],
                         "demo": doc["demo"], "status": doc["status"]},
             "config": rc.model_dump(), "steps": rows, "elements": elements, "methods": methods, "summary": summary,
-            "classes": rc.names()}
+            "classes": rc.names(), "classConflicts": _class_conflicts(rc)}
+
+
+def _class_conflicts(rc: PomConfig) -> list:
+    n = rc.names()
+    fqs = [f"{rc.stepsPackage}.{n['step']}", f"{rc.contractsPackage}.{n['iface']}", f"{rc.androidPackage}.{n['android']}"]
+    existing = {x.strip() for x in rc.existingClassNames if x.strip()}
+    return [fq for fq in fqs if fq in existing or fq.rsplit(".", 1)[-1] in existing]

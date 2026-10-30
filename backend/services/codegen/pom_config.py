@@ -73,6 +73,12 @@ class PomConfig(BaseModel):
     secretKeyPrefix: str = "AMTS_"
     asciiOnly: bool = False
     existingStepTexts: List[str] = Field(default_factory=list, max_length=5000)
+    findByExtraArgs: str = ""
+    unverifiedLocatorStrategies: List[str] = Field(default_factory=list)
+    stepTextStyle: Literal["EXPRESSION", "REGEX"] = "EXPRESSION"
+    stepMethodNaming: Literal["PAGE_METHOD", "STEP_TEXT"] = "PAGE_METHOD"
+    existingClassNames: List[str] = Field(default_factory=list, max_length=5000)
+    scrollManualHint: str = ""
 
     @model_validator(mode="after")
     def _check(self):
@@ -98,7 +104,12 @@ class PomConfig(BaseModel):
             e.append("pageModelArgs tek bir sabit (\"X\") veya ad = sabit çiftleri (name = \"X\", order = 1) olmalı.")
         for k, v in self.locatorTemplates.model_dump().items():
             if v and not re.fullmatch(rf"\s*\w+\s*=\s*(?:\{{value\}}|{lit})(?:\s*,\s*\w+\s*=\s*(?:\{{value\}}|{lit}))*\s*", v):
-                e.append(f"Locator şablonu {k} 'ad = {{value}}' (ve isteğe bağlı ad = sabit) biçiminde olmalı.")
+                e.append(f"Locator şablonu {k} 'ad = {{value}}' veya 'ad = \"önek={{value}}\"' (ve isteğe bağlı ad = sabit) biçiminde olmalı.")
+        if self.findByExtraArgs.strip() and not re.fullmatch(rf"\s*\w+\s*=\s*{lit}(?:\s*,\s*\w+\s*=\s*{lit})*\s*", self.findByExtraArgs):
+            e.append("findByExtraArgs 'ad = sabit' çiftleri olmalı (ör. timeout = 2).")
+        bad_s = set(self.unverifiedLocatorStrategies) - set(LOCATOR_STRATEGIES)
+        if bad_s:
+            e.append(f"unverifiedLocatorStrategies bilinmeyen strateji içeriyor: {', '.join(sorted(bad_s))}.")
         for k, v in self.actionTemplates.model_dump().items():
             bad_lines = [ln for ln in v.split("\n") if ln.strip() and not ln.rstrip().endswith((";", "{", "}"))]
             if bad_lines:
@@ -168,3 +179,39 @@ def resolve_pom(cfg: PomConfig, session_name: str) -> PomConfig:
 
 def feature_file_name(session_name: str) -> str:
     return ("_".join(w.lower() for w in words(session_name)) or "recorded") + ".feature"
+
+
+MOBILDENIZ = {
+    "javaVersion": "8", "sourceRoot": "src/test/java", "featureDir": "src/test/resources/features", "generateFeature": True,
+    "stepsPackage": "testAutomation.mobile.mobildeniz.tests.V3",
+    "contractsPackage": "testAutomation.mobile.mobildeniz.pageModels.contracts.V3",
+    "androidPackage": "testAutomation.mobile.mobildeniz.pageModels.android.V3",
+    "stepClassPattern": "{name}Test", "interfacePattern": "I{name}Page", "androidClassPattern": "{name}Page",
+    "stepBaseClass": "testautomation.mobile.domainlayer.pombase.Test",
+    "pageBaseClass": "testautomation.mobile.domainlayer.pombase.Model",
+    "pageModelAnnotation": "testautomation.mobile.domainlayer.annotations.PageModel",
+    "stepAnnotation": "cucumber.api.java.en.And",
+    "locatorAnnotation": "testautomation.mobile.domainlayer.annotations.FindBy",
+    "elementType": "testautomation.mobile.domainlayer.contracts.IMobileElement",
+    "pageFieldAnnotation": "", "pageFieldModifier": "public", "elementFieldModifier": "public", "appExpression": "mobileApp",
+    "resourceIdFormat": "FULL",
+    "locatorTemplates": {"RESOURCE_ID": 'locator = "id={value}"', "ACCESSIBILITY_ID": 'locator = "accessibilityId={value}"',
+                         "XPATH": 'locator = "xpath={value}"', "UIAUTOMATOR": ""},
+    "findByExtraArgs": "timeout = 2", "unverifiedLocatorStrategies": ["ACCESSIBILITY_ID"],
+    "actionTemplates": {"TAP": "{element}.click();", "INPUT_TEXT": "{element}.clear();\n{element}.sendKeys({value});",
+                        "LONG_PRESS": "{app}.longPressOnElement({element});", "BACK": "{app}.navigateToBack();",
+                        "SCROLL_DOWN": "", "SCROLL_UP": "", "SCROLL_LEFT": "", "SCROLL_RIGHT": ""},
+    "stepTextStyle": "REGEX", "stepMethodNaming": "STEP_TEXT", "tags": "@amts @android", "asciiOnly": False,
+    "scrollManualHint": "Framework kaydırma imzaları hedef element ve tekrar sayısı gerektiriyor (ör. swipeUp(IMobileElement, int), "
+                        "swipeUpUntilElementAppears(IMobileElement, int), swipeDownUntilElementAppears(IMobileElement, int)); "
+                        "kayıtta bu bilgiler yok, parametre uydurulmadı.",
+}
+
+BUILTIN_PROFILES = {
+    "GENERIC": {"name": "Cucumber + POM (genel, yapılandırılabilir)", "config": {}},
+    "MOBILDENIZ": {"name": "MobilDeniz - Cucumber POM", "config": MOBILDENIZ},
+}
+
+
+def builtin_profiles():
+    return [{"id": k, "name": v["name"], "builtin": True, "config": PomConfig(**v["config"]).model_dump()} for k, v in BUILTIN_PROFILES.items()]

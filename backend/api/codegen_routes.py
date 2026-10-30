@@ -12,7 +12,7 @@ from services.codegen import service as cg
 from services.codegen.javautil import words
 from services.codegen.validate import validate_files
 from services.sessions_service import get_session
-from services.codegen.pom_config import PomConfig, resolve_pom
+from services.codegen.pom_config import PomConfig, resolve_pom, builtin_profiles
 from services.codegen.pom_planner import build_pom_plan
 from services.codegen.pom_render import generate_files as pom_files
 from services.codegen.pom_validate import validate_pom
@@ -105,6 +105,11 @@ async def zip_export(body: FilesRequest):
 @router.get("/pom/defaults")
 async def pom_defaults():
     return PomConfig().model_dump()
+
+
+@router.get("/pom/profiles")
+async def pom_profiles():
+    return builtin_profiles()
 
 
 @router.post("/pom/plan")

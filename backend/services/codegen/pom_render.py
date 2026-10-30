@@ -29,7 +29,7 @@ def render_interface(plan, cfg: PomConfig):
     ann = simple(cfg.pageModelAnnotation) + (f"({cfg.pageModelArgs})" if cfg.pageModelArgs.strip() else "")
     body = []
     for m in plan["methods"]:
-        body += [f"{IND}// {m['comment']}" + ("" if m["supported"] else " — DESTEKLENMİYOR"), f"{IND}{_sig(m)};", ""]
+        body += [f"{IND}// {m['comment']}" + ("" if m["supported"] else (" — MANUEL UYARLAMA GEREKLİ" if m.get("manual") else " — DESTEKLENMİYOR")), f"{IND}{_sig(m)};", ""]
     return "\n".join([f"package {cfg.contractsPackage};", "", _imports(cfg.contractsPackage, [cfg.pageModelAnnotation]), ""] +
                      _header(plan, "Page Interface") + [f"@{ann}", f"public interface {n['iface']} {{", "", f"{IND}{BEGIN}"] +
                      body + [f"{IND}{END}", "}", ""])
@@ -43,6 +43,9 @@ def _alt_comment(a):
 
 
 def _action_body(m, cfg):
+    if m.get("manual"):
+        msg = f"AMTS: MANUEL UYARLAMA GEREKLİ — {m['action']} ({m['direction']}). {cfg.scrollManualHint or 'Kaydırma şablonu tanımlı değil.'}"
+        return [f"throw new UnsupportedOperationException({java_str(msg, cfg.asciiOnly)});"]
     if not m["supported"]:
         msg = f"AMTS: {m['action']} işlemi bu profilde desteklenmiyor veya şablonu tanımlı değil; mevcut framework metodunuzla elle uygulayın."
         return [f"throw new UnsupportedOperationException({java_str(msg, cfg.asciiOnly)});"]
@@ -86,9 +89,9 @@ def render_steps(plan, cfg: PomConfig):
             call = f"{f}.{m['name']}({cfg.secretValueTemplate.replace('{key}', p['name'])});"
         else:
             call = f"{f}.{m['name']}({p['name'] if p else ''});"
-        body += [f"{IND}// {m['comment']}" + ("" if m["supported"] else " — DESTEKLENMİYOR (page metodu hata fırlatır)"),
+        body += [f"{IND}// {m['comment']}" + ("" if m["supported"] else (" — MANUEL UYARLAMA GEREKLİ" if m.get("manual") else " — DESTEKLENMİYOR") + " (page metodu hata fırlatır)"),
                  f"{IND}@{step_ann}({java_str(m['stepText'], cfg.asciiOnly)})",
-                 f"{IND}public void {m['name']}({'String ' + p['name'] if p else ''}) {{", f"{IND}{IND}{call}", f"{IND}}}", ""]
+                 f"{IND}public void {m['stepMethod']}({'String ' + p['name'] if p else ''}) {{", f"{IND}{IND}{call}", f"{IND}}}", ""]
     imports = [cfg.stepAnnotation, cfg.stepBaseClass, cfg.pageFieldAnnotation, f"{cfg.contractsPackage}.{n['iface']}"]
     return "\n".join([f"package {cfg.stepsPackage};", "", _imports(cfg.stepsPackage, imports), ""] + _header(plan, "Step Definition") +
                      [f"public class {n['step']} extends {simple(cfg.stepBaseClass)} {{", "", f"{IND}{BEGIN}"] + body + [f"{IND}{END}", "}", ""])
@@ -102,10 +105,12 @@ def render_feature(plan, cfg: PomConfig):
              "  Ön koşul: Uygulama cihazda açık ve kaydın başladığı ekranda olmalı.", "", f"  Senaryo: {cfg.scenarioName}"]
     for i, r in enumerate(plan["steps"]):
         m = by_name[r["methodName"]]
-        text = m["stepText"]
+        text = m["featureText"]
         if m["param"]:
             text = text.replace("{string}", f'"{r["params"][0]["specValue"] if r["params"] else ""}"', 1)
-        if not r["supported"]:
+        if m.get("manual"):
+            lines.append(f"    # AMTS UYARI: Adım {r['order']} ({r['action']}) MANUEL UYARLAMA GEREKLİ; page metodu UnsupportedOperationException fırlatır.")
+        elif not r["supported"]:
             lines.append(f"    # AMTS UYARI: Adım {r['order']} ({r['action']}) desteklenmiyor; page metodu UnsupportedOperationException fırlatır.")
         lines.append(f"    {'Diyelim ki' if i == 0 else 'Ve'} {text}")
     return "\n".join(lines) + "\n"

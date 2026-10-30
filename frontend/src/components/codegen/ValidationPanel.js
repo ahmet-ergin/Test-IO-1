@@ -5,10 +5,12 @@ const CHECK_NAMES = {
   gauge_match: "Gauge adım ↔ @Step eşleşmesi", step_collisions: "Mevcut step metni çakışması", javac: "Java derleme (javac)",
   structure: "Katmanlar: paket, import, extends/implements, @PageModel, @FindBy", feature_match: "Feature adımı ↔ Cucumber tanımı eşleşmesi",
   java_syntax: "Java sözdizimi ve dosyalar arası derleme (stub'larla)", framework_compile: "Kurum içi framework'e karşı derleme",
+  class_collisions: "Mevcut sınıf adı çakışması",
 };
 const ICON = {
   PASS: <CheckCircle2 className="h-4 w-4 text-emerald-500" />, FAIL: <XCircle className="h-4 w-4 text-red-500" />,
   SKIPPED: <CircleDashed className="h-4 w-4 text-muted-foreground" />, PARTIAL: <CircleDashed className="h-4 w-4 text-amber-500" />,
+  WARN: <CircleDashed className="h-4 w-4 text-amber-500" />,
   NOT_VERIFIED: <CircleDashed className="h-4 w-4 text-amber-500" />,
 };
 const BANNER = {
